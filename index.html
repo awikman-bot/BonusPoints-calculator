@@ -109,7 +109,7 @@ button{font:inherit; color:inherit}
   background:var(--surface); border:1px solid var(--border);
   border-radius:var(--radius); box-shadow:var(--shadow);
 }
-.sidebar{position:sticky; top:84px; display:flex; flex-direction:column; gap:16px}
+.sidebar{position:sticky; top:90px; display:flex; flex-direction:column; gap:16px}
 @media (max-width:1040px){ .sidebar{position:static} }
 .card-head{padding:16px 18px 14px}
 .card-head + .card-body{padding-top:4px}
@@ -1037,6 +1037,32 @@ TABS.forEach(function(p, i){
     var n = TABS[(i + d + TABS.length) % TABS.length][0];
     selectTab(n); $(n).focus();
   });
+});
+
+/* ===================== rivien lisäys ===================== */
+function addRow(kind){
+  if (kind === 'earn'){
+    state.earn.push(state.avgOrder > 0 ? state.avgOrder : 50);
+    renderEarn();
+  } else if (kind === 'prod'){
+    state.products.push({id:nextId(), name:'Uusi tuote', price:25});
+    renderProd(); renderTimeline();
+  } else if (kind === 'buy'){
+    state.timeline.push({type:'buy', label:'Uusi osto', amount: state.avgOrder > 0 ? state.avgOrder : 50});
+    renderTimeline();
+  } else if (kind === 'redeem'){
+    state.timeline.push({type:'redeem', label:'Lunastus pisteillä',
+      productId: state.products.length ? state.products[0].id : null});
+    renderTimeline();
+  } else if (kind === 'tier'){
+    var prev = state.tiers.length ? tierMult(state.tiers[state.tiers.length-1]) : state.multiplier;
+    state.tiers.push({name:'Taso ' + (state.tiers.length + 1), linked:false, multiplier: prev + 1});
+    renderTier();
+  }
+  onChange();
+}
+Array.prototype.forEach.call(document.querySelectorAll('[data-add]'), function(btn){
+  btn.addEventListener('click', function(){ addRow(btn.getAttribute('data-add')); });
 });
 
 /* ===================== teema, CSV, oletukset ===================== */
