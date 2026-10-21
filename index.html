@@ -3,12 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Bonuspisteiden laskentamalli – Altaalle.com</title>
+<title>Bonuspisteiden laskentamalli</title>
 <meta name="description" content="Interaktiivinen laskentamalli verkkokaupan bonuspisteohjelmalle: ansaitsemiskerroin, pisteen arvo, tuotteiden pistehinnat, tasot ja esimerkkiasiakas.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><text y='.9em' font-size='56'>🏊</text></svg>">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 /* ---------- tokens ---------- */
 :root{
@@ -55,7 +52,7 @@
 html{-webkit-text-size-adjust:100%}
 body{
   margin:0; background:var(--page); color:var(--ink);
-  font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Inter","Helvetica Neue",Arial,sans-serif;
   font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased;
 }
 h1,h2,h3{margin:0; line-height:1.25; letter-spacing:-.01em}
@@ -265,6 +262,8 @@ footer{
   font-size:12.5px; color:var(--ink-3); line-height:1.6;
 }
 footer .card-body{padding:16px 18px}
+footer .foot-lead{color:var(--ink-2); margin-bottom:9px; padding-bottom:9px; border-bottom:1px solid var(--border)}
+footer strong{color:var(--ink)}
 .sr-only{position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0}
 @media print{ .topbar-actions,.table-actions,.row-del{display:none} .sidebar{position:static} }
 </style>
@@ -277,11 +276,10 @@ footer .card-body{padding:16px 18px}
       <div class="brand-mark">BP</div>
       <div>
         <h1>Bonuspisteiden laskentamalli</h1>
-        <div class="sub">Altaalle.com &middot; kanta-asiakasohjelman mitoitus</div>
+        <div class="sub">Kanta-asiakasohjelman mitoitus</div>
       </div>
     </div>
     <div class="topbar-actions">
-      <button class="btn" id="btn-csv" type="button" title="Lataa tuotteiden pistehinnat CSV-tiedostona">&#8595; Tuotteet CSV</button>
       <button class="btn" id="btn-reset" type="button" title="Palauta kaikki arvot mallin oletuksiin">&#8634; Oletukset</button>
       <button class="btn" id="btn-theme" type="button" aria-label="Vaihda vaalean ja tumman teeman välillä"><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.4A6.6 6.6 0 0 1 8 14.6Z" fill="currentColor"/></svg> Teema</button>
     </div>
@@ -413,7 +411,7 @@ footer .card-body{padding:16px 18px}
           </table>
         </div>
         <div class="table-actions"><button class="btn btn-sm" type="button" data-add="prod">+ Lisää tuote</button></div>
-        <p class="note">Pistehinta = hinta &times; pisteitä per euro. Tarvittavat ostot = pistehinta &divide; ansaitsemiskerroin. CSV-vienti antaa Vilkkaan tuontimuodon <code>bonushinta = PYÖRISTÄ(OVH &times; 100; 0)</code>.</p>
+        <p class="note">Pistehinta = hinta &times; pisteitä per euro. Tarvittavat ostot = pistehinta &divide; ansaitsemiskerroin. Pistehinnat eivät muutu kertoimen mukana &ndash; vain tarvittavien ostojen määrä muuttuu.</p>
       </section>
 
       <section class="card">
@@ -553,9 +551,16 @@ footer .card-body{padding:16px 18px}
 
 <footer>
   <div class="card"><div class="card-body">
-    <strong>Lähde:</strong> Vilkas Suite tuki &ndash; Kanta-asiakasohjelma,
-    <a href="https://www.vilkas.fi/tuki/suite/kanta-asiakasohjelma" target="_blank" rel="noopener">vilkas.fi/tuki/suite/kanta-asiakasohjelma</a>
-    (luettu 20.10.2026). Esimerkkiluvut ovat oletuksia, ei päätettyjä arvoja.
+    <p class="foot-lead">
+      <strong>Mikä tämä on?</strong> Suunnittelutyökalu verkkokaupan kanta-asiakasohjelman
+      mitoittamiseen: kokeile, mitä eri pistekertoimet ja pistehinnat tarkoittavat euroina
+      asiakkaalle ja kaupalle. <a href="./help.html">Lue tarkempi kuvaus &rarr;</a>
+    </p>
+    <p>
+      <strong>Lähde:</strong> Vilkas Suite tuki &ndash; Kanta-asiakasohjelma,
+      <a href="https://www.vilkas.fi/tuki/suite/kanta-asiakasohjelma" target="_blank" rel="noopener">vilkas.fi/tuki/suite/kanta-asiakasohjelma</a>
+      (luettu 20.10.2026). Esimerkkiluvut ovat oletuksia, ei päätettyjä arvoja.
+    </p>
   </div></div>
 </footer>
 <script>
@@ -1065,7 +1070,7 @@ Array.prototype.forEach.call(document.querySelectorAll('[data-add]'), function(b
   btn.addEventListener('click', function(){ addRow(btn.getAttribute('data-add')); });
 });
 
-/* ===================== teema, CSV, oletukset ===================== */
+/* ===================== teema ja oletukset ===================== */
 $('btn-theme').addEventListener('click', function(){
   var cur = document.documentElement.getAttribute('data-theme');
   var dark = cur ? cur === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -1073,21 +1078,6 @@ $('btn-theme').addEventListener('click', function(){
   document.documentElement.setAttribute('data-theme', next);
   try { localStorage.setItem(STORE + '-theme', next); } catch(e){}
   drawCharts(timelineRows());
-});
-
-$('btn-csv').addEventListener('click', function(){
-  var rows = [['Tuote','Hinta (EUR)','Pistehinta','Ostoja tarvitaan (EUR)']];
-  state.products.forEach(function(p){
-    var pp = pointPrice(p.price);
-    rows.push([p.name, F2.format(p.price), String(pp), state.multiplier > 0 ? F2.format(pp / state.multiplier) : '']);
-  });
-  var csv = '﻿' + rows.map(function(r){
-    return r.map(function(c){ return '"' + String(c).replace(/"/g, '""') + '"'; }).join(';');
-  }).join('\r\n');
-  var url = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
-  var a = el('a', {href:url, download:'bonuspistehinnat.csv'});
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
 });
 
 $('btn-reset').addEventListener('click', function(){

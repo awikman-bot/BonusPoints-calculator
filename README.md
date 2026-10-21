@@ -1,7 +1,7 @@
 # Bonuspisteiden laskentamalli
 
 Interaktiivinen verkkosovellus, joka toistaa Google Sheets -laskentamallin
-**Bonuspisteiden laskentamalli** (Altaalle.com) kaavat selaimessa.
+**Bonuspisteiden laskentamalli** kaavat selaimessa.
 
 **Sovellus:** <https://awikman-bot.github.io/BonusPoints-calculator/>
 
@@ -20,6 +20,8 @@ asiakas hyötyy vuoden aikana.
 Kaikki taulukot ovat muokattavia: rivejä voi lisätä ja poistaa, ja arvot
 lasketaan uudelleen välittömästi. Syötteet tallentuvat selaimen
 `localStorage`-muistiin; **Oletukset**-painike palauttaa alkuperäisen mallin arvot.
+
+Tarkempi kuvaus: [help.html](https://awikman-bot.github.io/BonusPoints-calculator/help.html)
 
 ## Kaavat
 

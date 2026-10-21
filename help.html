@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="fi" data-theme="">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mikä tämä työkalu on? – Bonuspisteiden laskentamalli</title>
+<meta name="description" content="Tarkempi kuvaus bonuspisteiden laskentamallista: mihin sitä käytetään, mitä käsitteet tarkoittavat, mitkä kaavat ovat käytössä ja miten luvut viedään Vilkkaaseen.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><text y='.9em' font-size='56'>🏊</text></svg>">
+<style>
+:root{
+  color-scheme: light;
+  --page:#f4f6f8;      --surface:#ffffff;   --surface-2:#f8fafc;
+  --border:#e2e6ec;    --border-strong:#cfd5de;
+  --ink:#14161a;       --ink-2:#56606e;     --ink-3:#848d9b;
+  --accent:#2a78d6;    --accent-ink:#1c5cab; --accent-wash:#eaf2fd;
+  --input-bg:#fff8e0;  --input-border:#f0dca6;
+  --link-ink:#146c2e;
+  --shadow:0 1px 2px rgba(16,24,40,.05), 0 8px 24px -12px rgba(16,24,40,.14);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --page:#101316;    --surface:#191d22;   --surface-2:#1f242a;
+    --border:#2b313a;  --border-strong:#3a424d;
+    --ink:#eef1f5;     --ink-2:#a7b1c0;     --ink-3:#78828f;
+    --accent:#3987e5;  --accent-ink:#86b6ef; --accent-wash:#152435;
+    --input-bg:#2b2616; --input-border:#4a411f;
+    --link-ink:#7fd79b;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -14px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --page:#101316;    --surface:#191d22;   --surface-2:#1f242a;
+  --border:#2b313a;  --border-strong:#3a424d;
+  --ink:#eef1f5;     --ink-2:#a7b1c0;     --ink-3:#78828f;
+  --accent:#3987e5;  --accent-ink:#86b6ef; --accent-wash:#152435;
+  --input-bg:#2b2616; --input-border:#4a411f;
+  --link-ink:#7fd79b;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -14px rgba(0,0,0,.7);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--page); color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Inter","Helvetica Neue",Arial,sans-serif;
+  font-size:15.5px; line-height:1.62; -webkit-font-smoothing:antialiased;
+}
+a{color:var(--accent-ink)}
+.wrap{max-width:820px; margin:0 auto; padding:26px 20px 64px}
+.back{
+  display:inline-flex; align-items:center; gap:7px; text-decoration:none;
+  background:var(--surface); border:1px solid var(--border-strong); border-radius:9px;
+  padding:7px 13px; font-size:13.5px; font-weight:500; color:var(--ink); margin-bottom:24px;
+}
+.back:hover{border-color:var(--accent); background:var(--surface-2)}
+h1{font-size:28px; line-height:1.2; letter-spacing:-.02em; margin:0 0 10px}
+.lead{font-size:17px; color:var(--ink-2); margin:0 0 30px}
+h2{
+  font-size:18px; letter-spacing:-.01em; margin:36px 0 12px;
+  padding-top:22px; border-top:1px solid var(--border);
+}
+h2:first-of-type{border-top:0; padding-top:0; margin-top:28px}
+h3{font-size:15px; margin:22px 0 6px}
+p{margin:0 0 13px}
+ul,ol{margin:0 0 13px; padding-left:22px}
+li{margin-bottom:7px}
+li > strong{color:var(--ink)}
+.card{
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:14px; box-shadow:var(--shadow); padding:20px 22px; margin:0 0 18px;
+}
+.card.tight{padding:16px 20px}
+.callout{
+  background:var(--accent-wash); border:1px solid color-mix(in srgb,var(--accent) 26%, transparent);
+  border-radius:12px; padding:15px 18px; margin:0 0 18px; font-size:14.5px;
+}
+.callout strong{color:var(--accent-ink)}
+.table-scroll{overflow-x:auto}
+table{width:100%; border-collapse:collapse; font-size:14px; min-width:460px}
+th,td{padding:9px 12px; text-align:left; border-bottom:1px solid var(--border); vertical-align:top}
+thead th{
+  font-size:11.5px; font-weight:650; letter-spacing:.055em; text-transform:uppercase;
+  color:var(--ink-3); border-bottom:1px solid var(--border-strong); background:var(--surface-2);
+}
+tbody tr:last-child td{border-bottom:0}
+td:first-child{font-weight:600; white-space:nowrap}
+code{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  font-size:12.8px; background:var(--surface-2); border:1px solid var(--border);
+  padding:1.5px 6px; border-radius:6px; white-space:nowrap;
+}
+pre{
+  background:var(--surface-2); border:1px solid var(--border); border-radius:11px;
+  padding:15px 17px; overflow-x:auto; margin:0 0 15px;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  font-size:13px; line-height:1.75;
+}
+pre code{background:none; border:0; padding:0; white-space:pre}
+.swatch{
+  display:inline-block; width:14px; height:14px; border-radius:4px; vertical-align:-2px;
+  margin-right:6px; background:var(--input-bg); border:1px solid var(--input-border);
+}
+footer{
+  margin-top:40px; padding-top:20px; border-top:1px solid var(--border);
+  font-size:13px; color:var(--ink-3); line-height:1.6;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<a class="back" href="./index.html">&larr; Takaisin laskuriin</a>
+
+<h1>Mikä tämä työkalu on?</h1>
+<p class="lead">
+  Bonuspisteiden laskentamalli on suunnittelutyökalu verkkokaupan kanta-asiakasohjelman
+  mitoittamiseen: sillä kokeillaan, mitä eri pistekertoimet ja pistehinnat tarkoittavat
+  euroina asiakkaalle ja kaupalle &ndash; <em>ennen</em> kuin arvot viedään kauppaan.
+</p>
+
+<div class="callout">
+  <strong>Lyhyesti:</strong> syötä ansaitsemiskerroin, pisteen arvo ja tuotteiden hinnat;
+  työkalu laskee, paljonko asiakas saa pisteitä, mitä tuotteet maksavat pisteinä, paljonko
+  ostoja palkinnon saamiseen tarvitaan ja mikä on todellinen palautusprosentti.
+</div>
+
+<h2>Mihin sitä käytetään</h2>
+<ul>
+  <li><strong>Kertoimen valintaan.</strong> Kerroin 3&nbsp;p/&euro; kuulostaa eri asialta kuin
+      &rdquo;3&nbsp;% palautus ostoista&rdquo;, vaikka ne ovat sama asia. Malli näyttää molemmat yhtä aikaa.</li>
+  <li><strong>Kustannuksen arviointiin.</strong> Palautusprosentti on suoraan ohjelman hinta
+      kaupalle: 3&nbsp;% tarkoittaa, että joka sadas euro myyntiä sitoo kolme euroa palkintoja.</li>
+  <li><strong>Pistehintojen asettamiseen.</strong> Taulukko kertoo tuotekohtaisesti, montako
+      pistettä tuote maksaa ja kuinka paljon ostoja pisteiden kerryttäminen vaatii.</li>
+  <li><strong>Tasojen mitoittamiseen.</strong> Vertailu näyttää, miten etu ja palkinnon
+      saavuttamiseen vaadittavat ostot muuttuvat, kun vain kerroin kasvaa.</li>
+  <li><strong>Esimerkin havainnollistamiseen.</strong> Aikajana näyttää yhden asiakkaan vuoden:
+      mitä hän maksoi, mitä sai ja mikä oli lopullinen etu.</li>
+</ul>
+
+<h2>Käsitteet</h2>
+<div class="card tight table-scroll">
+<table>
+  <thead><tr><th>Käsite</th><th>Mitä se tarkoittaa</th></tr></thead>
+  <tbody>
+    <tr><td>Ansaitsemiskerroin</td><td>Montako pistettä asiakas saa jokaisesta käytetystä eurosta. Vilkkaassa asetuksen nimi on <em>bonuspistekerroin</em>.</td></tr>
+    <tr><td>Pisteitä per 1 &euro;</td><td>Montako pistettä vastaa yhtä euroa, kun pisteitä käytetään maksamiseen. Määrittää pisteen arvon.</td></tr>
+    <tr><td>Pisteen arvo</td><td>Yhden pisteen arvo euroina: <code>1 € ÷ pisteitä per euro</code>.</td></tr>
+    <tr><td>Pistehinta</td><td>Tuotteen hinta pelkkinä pisteinä. Syötetään Vilkkaassa tuotekohtaisesti &ndash; sitä ei johdeta euroista automaattisesti.</td></tr>
+    <tr><td>Asiakkaan etu</td><td>Palautusprosentti: kuinka suuri osa ostojen arvosta palautuu asiakkaalle pisteinä.</td></tr>
+    <tr><td>Rekisteröitymisbonus</td><td>Kertaluonteiset pisteet, jotka asiakas saa liittyessään ohjelmaan.</td></tr>
+    <tr><td>Keskiostos</td><td>Tyypillinen tilauksen koko. Käytetään tasovertailussa ja korostetaan ansaintataulukossa.</td></tr>
+    <tr><td>Taso</td><td>Kanta-asiakastaso, jolla on oma kerroin. Pistehinnat pysyvät samoina, joten tuotteita ei tarvitse hinnoitella uudelleen.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>Kaavat</h2>
+<p>Laskenta vastaa solu solulta alkuperäistä laskentataulukkoa:</p>
+<pre><code>pisteen arvo           = 1 ÷ pisteitä per euro
+asiakkaan etu (%)      = ansaitsemiskerroin ÷ pisteitä per euro
+ansaitut pisteet       = PYÖRISTÄ(ostos × ansaitsemiskerroin; 0)
+pisteiden arvo (€)     = ansaitut pisteet × pisteen arvo
+pistehinta             = PYÖRISTÄ(hinta × pisteitä per euro; 0)
+ostoja tarvitaan (€)   = pistehinta ÷ ansaitsemiskerroin
+etu suhteessa ostoihin = pisteillä saatu etu ÷ maksettu yhteensä</code></pre>
+<p>
+  Pyöristys noudattaa Excelin <code>PYÖRISTÄ</code>-sääntöä, jossa puolikkaat pyöristyvät
+  nollasta poispäin. Siksi luvut täsmäävät taulukon kanssa senttiä myöten.
+</p>
+
+<h3>Miksi etu on sama kuin kerroin jaettuna pisteillä per euro</h3>
+<p>
+  Jokainen euro tuottaa <em>kerroin</em> pistettä, ja jokainen piste on arvoltaan
+  <code>1 ÷ pisteitä per euro</code> euroa. Euron tuotto euroina on siis
+  <code>kerroin ÷ pisteitä per euro</code>. Esimerkki: 3&nbsp;p/&euro; ja 100&nbsp;p&nbsp;=&nbsp;1&nbsp;&euro;
+  tuottaa <code>3 ÷ 100 = 3&nbsp;%</code>.
+</p>
+
+<h2>Miten sovellusta käytetään</h2>
+<ol>
+  <li>Muuta vasemman palstan <span class="swatch"></span><strong>keltaisia syöttökenttiä</strong>.
+      Kaikki muu lasketaan niistä automaattisesti.</li>
+  <li><strong>Malli</strong>-välilehdellä näet ansainnan, tuotteiden pistehinnat ja
+      esimerkkiasiakkaan vuoden.</li>
+  <li><strong>Tasot</strong>-välilehdellä vertaat tasoja. Taso&nbsp;1 hakee kertoimensa
+      Malli-välilehdeltä, muita voi muuttaa vapaasti.</li>
+  <li><strong>Ohje</strong>-välilehti tiivistää säännöt ja laskentalogiikan.</li>
+  <li>Taulukoiden rivejä voi <strong>lisätä ja poistaa</strong> &ndash; ostoja, tuotteita,
+      tapahtumia ja tasoja. Esimerkkiasiakkaan rivityyppi valitaan pudotusvalikosta:
+      rekisteröityminen, osto tai lunastus pisteillä.</li>
+  <li><strong>Oletukset</strong> palauttaa alkuperäisen mallin arvot, jos kokeilu menee solmuun.</li>
+</ol>
+<p>
+  Syötteet tallentuvat selaimen omaan muistiin, joten ne säilyvät sivun päivityksen yli
+  samassa selaimessa. Mitään ei lähetetä palvelimelle eikä jaeta muille.
+</p>
+
+<h2>Miten luvut viedään Vilkkaaseen</h2>
+<ul>
+  <li><strong>Ansaitut pisteet</strong> lasketaan aina euroista: ostos &times; bonuspistekerroin
+      (&times; tason tai kampanjan kerroin). Riittää, että asetat kertoimen.</li>
+  <li><strong>Pistehinta</strong> on tuotekohtainen tieto, joka syötetään tuotteelle
+      (&rdquo;Voi ostaa pisteillä&rdquo;). Järjestelmä ei johda sitä euroista automaattisesti,
+      joten jokaiselle palkintotuotteelle asetetaan oma pistehintansa.</li>
+  <li><strong>CSV-tuonnissa</strong> kaava on <code>bonushinta = PYÖRISTÄ(OVH × 100; 0)</code>,
+      kun 100&nbsp;p&nbsp;=&nbsp;1&nbsp;&euro;.</li>
+</ul>
+
+<h2>Mitä tämä ei ole</h2>
+<ul>
+  <li>Työkalu <strong>ei ole yhteydessä mihinkään kauppaan</strong> eikä muuta kaupan asetuksia.
+      Se on laskin, jonka tulokset syötetään kauppaan käsin.</li>
+  <li>Se <strong>ei käsittele asiakastietoja</strong>. Esimerkkiasiakas on keksitty aikajana.</li>
+  <li>Esimerkkiluvut ovat <strong>oletuksia, eivät päätettyjä arvoja</strong>.</li>
+</ul>
+
+<footer>
+  <strong>Lähde:</strong> Vilkas Suite tuki &ndash; Kanta-asiakasohjelma,
+  <a href="https://www.vilkas.fi/tuki/suite/kanta-asiakasohjelma" target="_blank" rel="noopener">vilkas.fi/tuki/suite/kanta-asiakasohjelma</a>
+  (luettu 20.10.2026).<br>
+  Laskentamalli on toteutettu alkuperäisen laskentataulukon kaavojen mukaisesti.
+</footer>
+
+</div>
+</body>
+</html>
