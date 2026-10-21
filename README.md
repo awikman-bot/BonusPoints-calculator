@@ -15,7 +15,7 @@ asiakas hyötyy vuoden aikana.
 |---|---|
 | **Malli** | Säännöt, ansaintataulukko, tuotteiden pistehinnat ja esimerkkiasiakkaan aikajana |
 | **Tasot** | Tasovertailu – vain ansaitsemiskerroin muuttuu, pistehinnat pysyvät samoina |
-| **Ohje** | Kolme sääntöä, Vilkkaan laskentalogiikka ja värikoodit |
+| **Ohje** | Kolme sääntöä ja Vilkkaan laskentalogiikka |
 
 Kaikki taulukot ovat muokattavia: rivejä voi lisätä ja poistaa, ja arvot
 lasketaan uudelleen välittömästi. Syötteet tallentuvat selaimen
@@ -43,10 +43,24 @@ poispäin), ei JavaScriptin `Math.round`-oletusta.
 
 ```
 index.html                 koko sovellus – ei riippuvuuksia, ei käännösvaihetta
-GoogleSpreadSheet/         alkuperäinen laskentataulukko (.xlsx + HTML-vienti)
+help.html                  laajempi kuvaus työkalusta
+tests/formulas.test.js     regressiotesti: node tests/formulas.test.js
 ```
 
 Julkaisu: GitHub Pages tarjoilee `index.html`-tiedoston `main`-haaran juuresta.
+Sivut eivät tee yhtään ulkoista pyyntöä eivätkä lähetä syötteitä mihinkään.
+
+## Alkuperäinen laskentataulukko
+
+Sovellus toistaa Google Sheets -laskentamallin *Bonuspisteiden laskentamalli*
+(välilehdet Ohje, Malli ja Tasot) kaavat sellaisinaan.
+
+> **Vilkkaan sisäiseen käyttöön.** Tämä repositorio on julkinen, mutta alla oleva
+> taulukko ei ole: se aukeaa vain Vilkkaan työntekijöille. Ulkopuolinen lukija
+> saa linkistä vain Googlen käyttöoikeusilmoituksen – kaikki laskentaan tarvittava
+> on kuvattu yllä olevissa kaavoissa ja [ohjesivulla](https://awikman-bot.github.io/BonusPoints-calculator/help.html).
+
+<https://docs.google.com/spreadsheets/d/1Y_1cjktwFDzmIMRVb5RNIDdlyJqYw2QL-KsJ1rTAq2c/edit?gid=387336235#gid=387336235>
 
 ## Lähde
 

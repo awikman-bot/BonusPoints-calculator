@@ -1,6 +1,8 @@
 /*
  * Regressiotesti: index.html:n laskentalogiikan on vastattava solu solulta
- * alkuperäistä laskentataulukkoa GoogleSpreadSheet/Bonuspisteiden_laskentamalli.xlsx.
+ * alkuperäistä Google Sheets -laskentamallia (Bonuspisteiden laskentamalli).
+ * Taulukko on Vilkkaan sisäinen; odotusarvot alla on kirjattu sen soluista,
+ * joten testi ei tarvitse pääsyä siihen.
  *
  * Aja:  node tests/formulas.test.js
  * Ei riippuvuuksia – laskentakoodi luetaan suoraan index.html:stä.
