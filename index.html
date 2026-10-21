@@ -1,1 +1,558 @@
-hello world
+<!DOCTYPE html>
+<html lang="fi" data-theme="">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bonuspisteiden laskentamalli – Altaalle.com</title>
+<meta name="description" content="Interaktiivinen laskentamalli verkkokaupan bonuspisteohjelmalle: ansaitsemiskerroin, pisteen arvo, tuotteiden pistehinnat, tasot ja esimerkkiasiakas.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><text y='.9em' font-size='56'>🏊</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ---------- tokens ---------- */
+:root{
+  color-scheme: light;
+  --page:#f4f6f8;      --surface:#ffffff;   --surface-2:#f8fafc;
+  --border:#e2e6ec;    --border-strong:#cfd5de;
+  --ink:#14161a;       --ink-2:#56606e;     --ink-3:#848d9b;
+  --accent:#2a78d6;    --accent-ink:#1c5cab; --accent-wash:#eaf2fd;
+  --series-1:#2a78d6;  --grid:#e6eaf0;
+  --input-bg:#fff8e0;  --input-ink:#0b57d0; --input-border:#f0dca6;
+  --link-ink:#146c2e;  --link-wash:#e9f6ed;
+  --pos:#146c2e;       --neg:#b3261e;
+  --shadow:0 1px 2px rgba(16,24,40,.05), 0 8px 24px -12px rgba(16,24,40,.14);
+  --radius:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --page:#101316;    --surface:#191d22;   --surface-2:#1f242a;
+    --border:#2b313a;  --border-strong:#3a424d;
+    --ink:#eef1f5;     --ink-2:#a7b1c0;     --ink-3:#78828f;
+    --accent:#3987e5;  --accent-ink:#86b6ef; --accent-wash:#152435;
+    --series-1:#3987e5; --grid:#262c34;
+    --input-bg:#2b2616; --input-ink:#a8c7fa; --input-border:#4a411f;
+    --link-ink:#7fd79b; --link-wash:#152a1c;
+    --pos:#7fd79b;     --neg:#f08d86;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -14px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --page:#101316;    --surface:#191d22;   --surface-2:#1f242a;
+  --border:#2b313a;  --border-strong:#3a424d;
+  --ink:#eef1f5;     --ink-2:#a7b1c0;     --ink-3:#78828f;
+  --accent:#3987e5;  --accent-ink:#86b6ef; --accent-wash:#152435;
+  --series-1:#3987e5; --grid:#262c34;
+  --input-bg:#2b2616; --input-ink:#a8c7fa; --input-border:#4a411f;
+  --link-ink:#7fd79b; --link-wash:#152a1c;
+  --pos:#7fd79b;     --neg:#f08d86;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -14px rgba(0,0,0,.7);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--page); color:var(--ink);
+  font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3{margin:0; line-height:1.25; letter-spacing:-.01em}
+p{margin:0}
+a{color:var(--accent-ink)}
+button{font:inherit; color:inherit}
+
+/* ---------- shell ---------- */
+.topbar{
+  position:sticky; top:0; z-index:40;
+  background:color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter:saturate(180%) blur(12px);
+  border-bottom:1px solid var(--border);
+}
+.topbar-in{
+  max-width:1360px; margin:0 auto; padding:14px 20px;
+  display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+}
+.brand{display:flex; align-items:center; gap:12px; min-width:0}
+.brand-mark{
+  width:38px; height:38px; flex:none; border-radius:11px;
+  background:linear-gradient(140deg,var(--accent),#1b4f96);
+  display:grid; place-items:center; color:#fff; font-weight:700; font-size:16px;
+  box-shadow:0 2px 8px -2px rgba(42,120,214,.6);
+}
+.brand h1{font-size:16px; font-weight:650}
+.brand .sub{font-size:12.5px; color:var(--ink-3)}
+.topbar-actions{margin-left:auto; display:flex; gap:8px; flex-wrap:wrap}
+.btn{
+  display:inline-flex; align-items:center; gap:7px;
+  background:var(--surface); border:1px solid var(--border-strong);
+  border-radius:9px; padding:7px 12px; font-size:13px; font-weight:500;
+  cursor:pointer; transition:background .15s, border-color .15s, transform .08s;
+}
+.btn:hover{background:var(--surface-2); border-color:var(--accent)}
+.btn:active{transform:translateY(1px)}
+.btn-primary{background:var(--accent); border-color:var(--accent); color:#fff}
+.btn-primary:hover{background:var(--accent-ink); border-color:var(--accent-ink)}
+.btn-sm{padding:5px 10px; font-size:12.5px; border-radius:8px}
+.btn:focus-visible,input:focus-visible,select:focus-visible,.tab:focus-visible{
+  outline:2px solid var(--accent); outline-offset:2px;
+}
+
+.layout{
+  max-width:1360px; margin:0 auto; padding:22px 20px 56px;
+  display:grid; grid-template-columns:332px minmax(0,1fr); gap:22px; align-items:start;
+}
+@media (max-width:1040px){ .layout{grid-template-columns:minmax(0,1fr)} }
+
+.card{
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius); box-shadow:var(--shadow);
+}
+.sidebar{position:sticky; top:84px; display:flex; flex-direction:column; gap:16px}
+@media (max-width:1040px){ .sidebar{position:static} }
+.card-head{padding:16px 18px 0}
+.card-body{padding:16px 18px 18px}
+.eyebrow{
+  font-size:11px; font-weight:650; letter-spacing:.09em; text-transform:uppercase;
+  color:var(--accent-ink);
+}
+.card-head h2{font-size:15.5px; font-weight:650; margin-top:5px}
+.card-head .hint{font-size:12.5px; color:var(--ink-3); margin-top:5px}
+
+/* ---------- inputs ---------- */
+.field{margin-top:14px}
+.field > label{display:block; font-size:13px; font-weight:550; margin-bottom:5px}
+.field .desc{font-size:12px; color:var(--ink-3); margin-top:5px; line-height:1.45}
+.input-wrap{position:relative; display:flex; align-items:center}
+input[type=number],input[type=text],select{
+  width:100%; background:var(--surface); color:var(--ink);
+  border:1px solid var(--border-strong); border-radius:9px;
+  padding:8px 10px; font:inherit; font-size:14px; min-width:0;
+}
+input[type=number]{font-variant-numeric:tabular-nums}
+input.cell-input{
+  background:var(--input-bg); color:var(--input-ink);
+  border-color:var(--input-border); font-weight:600;
+}
+input.cell-input:hover{border-color:var(--accent)}
+.input-wrap .unit{
+  position:absolute; right:11px; font-size:12.5px; color:var(--ink-3);
+  pointer-events:none; font-weight:500;
+}
+.input-wrap.has-unit input{padding-right:46px}
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none; margin:0}
+input[type=number]{-moz-appearance:textfield}
+
+/* ---------- derived strip ---------- */
+.derived{display:grid; gap:9px}
+.derived-item{
+  display:flex; align-items:baseline; justify-content:space-between; gap:10px;
+  padding:10px 12px; background:var(--surface-2);
+  border:1px solid var(--border); border-radius:10px;
+}
+.derived-item .k{font-size:12.5px; color:var(--ink-2)}
+.derived-item .v{font-size:16px; font-weight:650; font-variant-numeric:tabular-nums}
+.derived-item.hero{background:var(--accent-wash); border-color:color-mix(in srgb,var(--accent) 28%, transparent)}
+.derived-item.hero .v{color:var(--accent-ink); font-size:21px}
+
+/* ---------- tabs ---------- */
+.tabs{display:flex; gap:6px; padding:5px; background:var(--surface-2);
+  border:1px solid var(--border); border-radius:12px; margin-bottom:18px; flex-wrap:wrap}
+.tab{
+  flex:1 1 auto; min-width:104px; text-align:center; background:transparent;
+  border:1px solid transparent; border-radius:9px; padding:8px 14px;
+  font-size:13.5px; font-weight:550; color:var(--ink-2); cursor:pointer;
+}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{background:var(--surface); color:var(--ink);
+  border-color:var(--border-strong); box-shadow:0 1px 2px rgba(16,24,40,.06)}
+.panel[hidden]{display:none}
+.stack{display:flex; flex-direction:column; gap:18px}
+
+/* ---------- tables ---------- */
+.table-scroll{overflow-x:auto; -webkit-overflow-scrolling:touch}
+table{width:100%; border-collapse:collapse; font-size:14px; min-width:520px}
+th,td{padding:9px 12px; text-align:left; border-bottom:1px solid var(--border); vertical-align:middle}
+thead th{
+  font-size:11.5px; font-weight:650; letter-spacing:.055em; text-transform:uppercase;
+  color:var(--ink-3); border-bottom:1px solid var(--border-strong); white-space:nowrap;
+  background:var(--surface-2);
+}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--surface-2)}
+td.num,th.num{text-align:right; font-variant-numeric:tabular-nums}
+td.calc{color:var(--ink-3); font-size:13px; white-space:nowrap}
+tr.is-avg{background:var(--accent-wash)}
+tr.is-avg:hover{background:var(--accent-wash)}
+.badge{
+  display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px;
+  font-weight:600; background:var(--accent); color:#fff; white-space:nowrap;
+}
+.badge.ghost{background:var(--link-wash); color:var(--link-ink);
+  border:1px solid color-mix(in srgb,var(--link-ink) 32%, transparent)}
+.linked{color:var(--link-ink); font-weight:650}
+.pos{color:var(--pos); font-weight:600}
+.neg{color:var(--neg); font-weight:600}
+.cell-sm{width:120px}
+.cell-xs{width:96px}
+td input[type=number],td input[type=text],td select{padding:6px 9px; font-size:13.5px}
+.row-del{
+  width:28px; height:28px; display:grid; place-items:center; padding:0;
+  border-radius:8px; border:1px solid transparent; background:transparent;
+  color:var(--ink-3); cursor:pointer; font-size:17px; line-height:1;
+}
+.row-del:hover{background:color-mix(in srgb,var(--neg) 14%, transparent); color:var(--neg); border-color:color-mix(in srgb,var(--neg) 34%, transparent)}
+.row-del[disabled]{opacity:.28; cursor:not-allowed}
+tfoot td{border-top:1px solid var(--border-strong); font-weight:600; background:var(--surface-2)}
+.table-actions{display:flex; gap:8px; flex-wrap:wrap; padding:14px 18px 0}
+.note{
+  font-size:12.5px; color:var(--ink-3); padding:12px 18px 0; line-height:1.5;
+}
+
+/* ---------- totals ---------- */
+.totals{display:grid; grid-template-columns:repeat(auto-fit,minmax(176px,1fr)); gap:12px; padding:16px 18px 0}
+.total{padding:13px 14px; border:1px solid var(--border); border-radius:11px; background:var(--surface-2)}
+.total .k{font-size:12px; color:var(--ink-2); display:block; line-height:1.35}
+.total .v{font-size:20px; font-weight:650; font-variant-numeric:tabular-nums; display:block; margin-top:4px}
+.total.accent{background:var(--accent-wash); border-color:color-mix(in srgb,var(--accent) 28%, transparent)}
+.total.accent .v{color:var(--accent-ink)}
+
+/* ---------- chart ---------- */
+.chart-wrap{position:relative; padding:4px 18px 18px}
+.chart-wrap svg{display:block; width:100%; height:auto; overflow:visible}
+.chart-title{font-size:13.5px; font-weight:600; padding:16px 18px 0}
+.chart-sub{font-size:12.5px; color:var(--ink-3); padding:3px 18px 0}
+.tip{
+  position:absolute; pointer-events:none; opacity:0; transform:translate(-50%,-110%);
+  background:var(--ink); color:var(--page); padding:7px 10px; border-radius:8px;
+  font-size:12.5px; line-height:1.4; white-space:nowrap; z-index:5;
+  transition:opacity .12s; box-shadow:0 6px 18px -6px rgba(0,0,0,.5);
+}
+.tip strong{font-weight:650}
+.tip[data-show="1"]{opacity:1}
+
+/* ---------- ohje ---------- */
+.rules{display:grid; gap:12px; padding:16px 18px 0}
+.rule{display:flex; gap:13px; padding:14px; border:1px solid var(--border); border-radius:11px; background:var(--surface-2)}
+.rule .n{
+  flex:none; width:27px; height:27px; border-radius:8px; background:var(--accent); color:#fff;
+  display:grid; place-items:center; font-weight:650; font-size:13px;
+}
+.rule h3{font-size:14px; font-weight:650}
+.rule p{font-size:13.5px; color:var(--ink-2); margin-top:3px}
+.deflist{display:grid; gap:0; padding:8px 18px 0}
+.deflist > div{display:grid; grid-template-columns:200px minmax(0,1fr); gap:16px; padding:11px 0; border-bottom:1px solid var(--border)}
+.deflist > div:last-child{border-bottom:0}
+.deflist dt{font-weight:600; font-size:13.5px}
+.deflist dd{margin:0; font-size:13.5px; color:var(--ink-2)}
+@media (max-width:620px){ .deflist > div{grid-template-columns:minmax(0,1fr); gap:3px} }
+code,.mono{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  font-size:12.5px; background:var(--surface-2); border:1px solid var(--border);
+  padding:1.5px 6px; border-radius:6px;
+}
+.legend-swatch{display:inline-block; width:15px; height:15px; border-radius:4px; vertical-align:-3px; margin-right:7px; border:1px solid var(--border-strong)}
+.sw-input{background:var(--input-bg); border-color:var(--input-border)}
+.sw-calc{background:var(--surface); border-color:var(--border-strong)}
+.sw-link{background:var(--link-wash); border-color:var(--link-ink)}
+
+footer{
+  max-width:1360px; margin:0 auto; padding:0 20px 44px;
+  font-size:12.5px; color:var(--ink-3); line-height:1.6;
+}
+footer .card-body{padding:16px 18px}
+.sr-only{position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0}
+@media print{ .topbar-actions,.table-actions,.row-del{display:none} .sidebar{position:static} }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-in">
+    <div class="brand">
+      <div class="brand-mark">BP</div>
+      <div>
+        <h1>Bonuspisteiden laskentamalli</h1>
+        <div class="sub">Altaalle.com &middot; kanta-asiakasohjelman mitoitus</div>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn" id="btn-csv" type="button" title="Lataa tuotteiden pistehinnat CSV-tiedostona">&#8595; Tuotteet CSV</button>
+      <button class="btn" id="btn-reset" type="button" title="Palauta kaikki arvot mallin oletuksiin">&#8634; Oletukset</button>
+      <button class="btn" id="btn-theme" type="button" aria-label="Vaihda vaalean ja tumman teeman välillä">&#9681; Teema</button>
+    </div>
+  </div>
+</div>
+
+<main class="layout">
+
+  <!-- ============ SIVUPALKKI: syöttötiedot + johdetut arvot ============ -->
+  <aside class="sidebar">
+    <section class="card">
+      <div class="card-head">
+        <div class="eyebrow">Osa 1</div>
+        <h2>Säännöt (syöttötiedot)</h2>
+        <p class="hint">Muuta vain keltaisia soluja. Kaikki muu lasketaan näistä.</p>
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <label for="in-multiplier">Ansaitsemiskerroin</label>
+          <div class="input-wrap has-unit">
+            <input class="cell-input" type="number" id="in-multiplier" min="0" step="0.1" value="3">
+            <span class="unit">p / &euro;</span>
+          </div>
+          <p class="desc">Montako pistettä asiakas saa jokaisesta käytetystä eurosta. Vilkkaassa: <em>Bonuspistekerroin</em>.</p>
+        </div>
+        <div class="field">
+          <label for="in-ppe">Pisteitä per 1 &euro;</label>
+          <div class="input-wrap has-unit">
+            <input class="cell-input" type="number" id="in-ppe" min="1" step="1" value="100">
+            <span class="unit">p</span>
+          </div>
+          <p class="desc">Pisteen arvo: tämä määrä pisteitä vastaa yhtä euroa (100&nbsp;p&nbsp;=&nbsp;1&nbsp;&euro;).</p>
+        </div>
+        <div class="field">
+          <label for="in-signup">Rekisteröitymisbonus</label>
+          <div class="input-wrap has-unit">
+            <input class="cell-input" type="number" id="in-signup" min="0" step="10" value="500">
+            <span class="unit">p</span>
+          </div>
+          <p class="desc">Pisteet, jotka asiakas saa heti rekisteröityessään.</p>
+        </div>
+        <div class="field">
+          <label for="in-avg">Keskiostos</label>
+          <div class="input-wrap has-unit">
+            <input class="cell-input" type="number" id="in-avg" min="0" step="5" value="75">
+            <span class="unit">&euro;</span>
+          </div>
+          <p class="desc">Käytetään Tasot-vertailussa ja korostetaan ansaintataulukossa.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div class="eyebrow">Johdetut arvot</div>
+        <h2>Lasketaan kaavoilla</h2>
+      </div>
+      <div class="card-body">
+        <div class="derived">
+          <div class="derived-item hero">
+            <span class="k">Asiakkaan etu<br>(palautus-%)</span>
+            <span class="v" id="d-benefit">3,0&nbsp;%</span>
+          </div>
+          <div class="derived-item">
+            <span class="k">Yhden pisteen arvo</span>
+            <span class="v" id="d-pointvalue">0,0100&nbsp;&euro;</span>
+          </div>
+          <div class="derived-item">
+            <span class="k">Pistehinnan kerroin</span>
+            <span class="v" id="d-factor">&times;&nbsp;100</span>
+          </div>
+        </div>
+        <p class="desc" style="margin-top:12px">Etu&nbsp;% = kerroin &divide; pisteitä per euro. Pistehinta = hinta &times; pisteitä per euro.</p>
+      </div>
+    </section>
+  </aside>
+
+  <!-- ============ SISÄLTÖ ============ -->
+  <div>
+    <div class="tabs" role="tablist" aria-label="Välilehdet">
+      <button class="tab" role="tab" id="tab-malli" aria-controls="panel-malli" aria-selected="true">Malli</button>
+      <button class="tab" role="tab" id="tab-tasot" aria-controls="panel-tasot" aria-selected="false">Tasot</button>
+      <button class="tab" role="tab" id="tab-ohje" aria-controls="panel-ohje" aria-selected="false">Ohje</button>
+    </div>
+
+    <!-- ---------- MALLI ---------- -->
+    <div class="panel stack" id="panel-malli" role="tabpanel" aria-labelledby="tab-malli">
+
+      <section class="card">
+        <div class="card-head">
+          <div class="eyebrow">Osa 2</div>
+          <h2>Ansaitseminen: paljonko ostoksesta kertyy pisteitä</h2>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th class="num">Ostos (&euro;)</th>
+                <th class="num">Ansaitut pisteet</th>
+                <th class="num">Pisteiden arvo (&euro;)</th>
+                <th>Laskutoimitus</th>
+                <th><span class="sr-only">Poista</span></th>
+              </tr>
+            </thead>
+            <tbody id="tb-earn"></tbody>
+          </table>
+        </div>
+        <div class="table-actions"><button class="btn btn-sm" type="button" data-add="earn">+ Lisää ostos</button></div>
+        <p class="note">Ansaitut pisteet = PYÖRISTÄ(ostos &times; ansaitsemiskerroin; 0). Pisteiden arvo = pisteet &times; pisteen arvo.</p>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <div class="eyebrow">Osa 3</div>
+          <h2>Tuotteiden pistehinnat: paljonko tuote maksaa pelkillä pisteillä</h2>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Tuote</th>
+                <th class="num">Hinta (&euro;)</th>
+                <th class="num">Pistehinta</th>
+                <th class="num">Ostoja tarvitaan pisteiden keräämiseen (&euro;)</th>
+                <th><span class="sr-only">Poista</span></th>
+              </tr>
+            </thead>
+            <tbody id="tb-prod"></tbody>
+          </table>
+        </div>
+        <div class="table-actions"><button class="btn btn-sm" type="button" data-add="prod">+ Lisää tuote</button></div>
+        <p class="note">Pistehinta = hinta &times; pisteitä per euro. Tarvittavat ostot = pistehinta &divide; ansaitsemiskerroin. CSV-vienti antaa Vilkkaan tuontimuodon <code>bonushinta = PYÖRISTÄ(OVH &times; 100; 0)</code>.</p>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <div class="eyebrow">Osa 4</div>
+          <h2>Esimerkkiasiakas vuoden aikana</h2>
+          <p class="hint">Valitse rivityyppi: rekisteröityminen antaa bonuspisteet, osto kerryttää euroista, lunastus veloittaa tuotteen pistehinnan.</p>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th class="cell-xs">Vaihe</th>
+                <th>Tapahtuma</th>
+                <th>Tyyppi</th>
+                <th class="num">Maksettu (&euro;)</th>
+                <th class="num">Pisteet (+/&minus;)</th>
+                <th class="num">Saldo</th>
+                <th><span class="sr-only">Poista</span></th>
+              </tr>
+            </thead>
+            <tbody id="tb-time"></tbody>
+          </table>
+        </div>
+        <div class="table-actions">
+          <button class="btn btn-sm" type="button" data-add="buy">+ Osto</button>
+          <button class="btn btn-sm" type="button" data-add="redeem">+ Lunastus pisteillä</button>
+        </div>
+        <div class="totals">
+          <div class="total"><span class="k">Maksettu yhteensä</span><span class="v" id="t-paid">325,00&nbsp;&euro;</span></div>
+          <div class="total"><span class="k">Pisteillä saatu etu</span><span class="v" id="t-gain">10,00&nbsp;&euro;</span></div>
+          <div class="total"><span class="k">Loppusaldo</span><span class="v" id="t-balance">475&nbsp;p</span></div>
+          <div class="total accent"><span class="k">Etu suhteessa ostoihin (sis. rekisteröitymisbonuksen)</span><span class="v" id="t-benefit">3,1&nbsp;%</span></div>
+        </div>
+        <h3 class="chart-title">Pistesaldon kehitys</h3>
+        <p class="chart-sub">Saldo jokaisen tapahtuman jälkeen.</p>
+        <div class="chart-wrap">
+          <svg id="chart-balance" role="img" aria-label="Pylväskaavio pistesaldon kehityksestä tapahtumittain"></svg>
+          <div class="tip" id="tip-balance"></div>
+        </div>
+        <p class="note">Varoitus negatiivisesta saldosta näkyy rivillä, jos pisteet eivät riitä lunastukseen.</p>
+      </section>
+    </div>
+
+    <!-- ---------- TASOT ---------- -->
+    <div class="panel stack" id="panel-tasot" role="tabpanel" aria-labelledby="tab-tasot" hidden>
+      <section class="card">
+        <div class="card-head">
+          <div class="eyebrow">Seuraavat tasot</div>
+          <h2>Vain ansaitsemiskerroin muuttuu</h2>
+          <p class="hint">Pisteen arvo ja tuotteiden pistehinnat pysyvät samoina kaikilla tasoilla, joten tuotteita ei tarvitse hinnoitella uudelleen.</p>
+        </div>
+        <div class="card-body">
+          <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px">
+            <div class="field" style="margin-top:0">
+              <label for="in-exprice">Esimerkkituotteen hinta</label>
+              <div class="input-wrap has-unit">
+                <input class="cell-input" type="number" id="in-exprice" min="0" step="1" value="50">
+                <span class="unit">&euro;</span>
+              </div>
+            </div>
+            <div class="derived-item" style="align-self:end">
+              <span class="k">Esimerkkituotteen pistehinta</span>
+              <span class="v" id="d-exPoints">5&nbsp;000&nbsp;p</span>
+            </div>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Taso</th>
+                <th class="num">Kerroin (p/&euro;)</th>
+                <th class="num">Etu (%)</th>
+                <th class="num">Keskiostos <span id="th-avg">75&nbsp;&euro;</span> kerryttää</th>
+                <th class="num">Esimerkkituote saavutetaan ostoilla (&euro;)</th>
+                <th><span class="sr-only">Poista</span></th>
+              </tr>
+            </thead>
+            <tbody id="tb-tier"></tbody>
+          </table>
+        </div>
+        <div class="table-actions"><button class="btn btn-sm" type="button" data-add="tier">+ Lisää taso</button></div>
+        <p class="note">Taso&nbsp;1 haetaan Malli-välilehdeltä (<span class="linked">vihre&auml;</span> = linkki toiselta välilehdeltä). Muiden tasojen kertoimia voi muuttaa.<br>Yleiskaava: etu-% = kerroin &divide; pisteitä per euro. Tarvittavat ostot = pistehinta &divide; kerroin.</p>
+        <h3 class="chart-title">Asiakkaan etu tasoittain</h3>
+        <p class="chart-sub">Palautusprosentti ostojen arvosta.</p>
+        <div class="chart-wrap">
+          <svg id="chart-tiers" role="img" aria-label="Pylväskaavio asiakkaan edusta tasoittain"></svg>
+          <div class="tip" id="tip-tiers"></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ---------- OHJE ---------- -->
+    <div class="panel stack" id="panel-ohje" role="tabpanel" aria-labelledby="tab-ohje" hidden>
+      <section class="card">
+        <div class="card-head">
+          <div class="eyebrow">Ohje</div>
+          <h2>Kolme sääntöä</h2>
+        </div>
+        <div class="rules">
+          <div class="rule"><div class="n">1</div><div>
+            <h3>Ansaitseminen</h3>
+            <p>Asiakas saa jokaisesta käytetystä eurosta kertoimen verran pisteitä (esimerkissä 1&nbsp;&euro;&nbsp;=&nbsp;<span id="r-mult">3</span>&nbsp;p).</p>
+          </div></div>
+          <div class="rule"><div class="n">2</div><div>
+            <h3>Pisteen arvo</h3>
+            <p><span id="r-ppe">100</span> pistettä vastaa yhtä euroa. Pisteen arvo = 1&nbsp;&euro; &divide; <span id="r-ppe2">100</span> = <span id="r-pv">0,0100</span>&nbsp;&euro;.</p>
+          </div></div>
+          <div class="rule"><div class="n">3</div><div>
+            <h3>Pistehinta</h3>
+            <p>Tuotteen pistehinta = euromääräinen hinta &times; <span id="r-factor">100</span>. Näin asiakas saa takaisin <span id="r-benefit">3</span>&nbsp;% ostojensa arvosta.</p>
+          </div></div>
+        </div>
+        <div class="card-head" style="padding-top:22px"><h2>Miten Vilkas laskee</h2></div>
+        <dl class="deflist">
+          <div><dt>Ansaitut pisteet</dt><dd>Lasketaan aina euroista: ostos &times; bonuspistekerroin (&times; tason kerroin tai kampanjakerroin).</dd></div>
+          <div><dt>Pistehinta</dt><dd>Syötetään tuotekohtaisesti välilehdelle Bonuspistehinta (&rdquo;Voi ostaa pisteillä&rdquo;). Järjestelmä ei johda sitä euroista automaattisesti.</dd></div>
+          <div><dt>CSV-kaava</dt><dd><code>bonushinta = PYÖRISTÄ(OVH &times; 100; 0)</code></dd></div>
+        </dl>
+        <div class="card-head" style="padding-top:22px"><h2>Välilehdet</h2></div>
+        <dl class="deflist">
+          <div><dt>Malli</dt><dd>Yhden tason esimerkki: säännöt, ansaitseminen, pistehinnat ja esimerkkiasiakas.</dd></div>
+          <div><dt>Tasot</dt><dd>Seuraavat tasot: vain kerroin muuttuu, pistehinnat pysyvät samoina.</dd></div>
+        </dl>
+        <div class="card-head" style="padding-top:22px"><h2>Värikoodit</h2></div>
+        <dl class="deflist">
+          <div><dt><span class="legend-swatch sw-input"></span>Keltainen kenttä</dt><dd>Syöttösolu &ndash; muuta näitä.</dd></div>
+          <div><dt><span class="legend-swatch sw-calc"></span>Tavallinen teksti</dt><dd>Kaava &ndash; lasketaan automaattisesti.</dd></div>
+          <div><dt><span class="legend-swatch sw-link"></span><span class="linked">Vihre&auml; teksti</span></dt><dd>Linkki toiselta välilehdeltä.</dd></div>
+        </dl>
+        <p class="note" style="padding-bottom:18px">Tämä sovellus toistaa alkuperäisen Google&nbsp;Sheets -laskentamallin (välilehdet Ohje, Malli, Tasot) samoilla kaavoilla. Arvot tallentuvat vain tämän selaimen muistiin.</p>
+      </section>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="card"><div class="card-body">
+    <strong>Lähde:</strong> Vilkas Suite tuki &ndash; Kanta-asiakasohjelma,
+    <a href="https://www.vilkas.fi/tuki/suite/kanta-asiakasohjelma" target="_blank" rel="noopener">vilkas.fi/tuki/suite/kanta-asiakasohjelma</a>
+    (luettu 20.10.2026). Esimerkkiluvut ovat oletuksia, ei päätettyjä arvoja.
+  </div></div>
+</footer>
