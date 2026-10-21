@@ -15,8 +15,6 @@
   --ink:#14161a;       --ink-2:#56606e;     --ink-3:#848d9b;
   --accent:#2a78d6;    --accent-ink:#1c5cab; --accent-wash:#eaf2fd;
   --series-1:#2a78d6;  --grid:#e6eaf0;
-  --input-bg:#fff8e0;  --input-ink:#0b57d0; --input-border:#f0dca6;
-  --link-ink:#146c2e;  --link-wash:#e9f6ed;
   --pos:#146c2e;       --neg:#b3261e;
   --shadow:0 1px 2px rgba(16,24,40,.05), 0 8px 24px -12px rgba(16,24,40,.14);
   --radius:14px;
@@ -29,8 +27,6 @@
     --ink:#eef1f5;     --ink-2:#a7b1c0;     --ink-3:#78828f;
     --accent:#3987e5;  --accent-ink:#86b6ef; --accent-wash:#152435;
     --series-1:#3987e5; --grid:#262c34;
-    --input-bg:#2b2616; --input-ink:#a8c7fa; --input-border:#4a411f;
-    --link-ink:#7fd79b; --link-wash:#152a1c;
     --pos:#7fd79b;     --neg:#f08d86;
     --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -14px rgba(0,0,0,.7);
   }
@@ -42,8 +38,6 @@
   --ink:#eef1f5;     --ink-2:#a7b1c0;     --ink-3:#78828f;
   --accent:#3987e5;  --accent-ink:#86b6ef; --accent-wash:#152435;
   --series-1:#3987e5; --grid:#262c34;
-  --input-bg:#2b2616; --input-ink:#a8c7fa; --input-border:#4a411f;
-  --link-ink:#7fd79b; --link-wash:#152a1c;
   --pos:#7fd79b;     --neg:#f08d86;
   --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -14px rgba(0,0,0,.7);
 }
@@ -126,14 +120,11 @@ button{font:inherit; color:inherit}
 input[type=number],input[type=text],select{
   width:100%; background:var(--surface); color:var(--ink);
   border:1px solid var(--border-strong); border-radius:9px;
-  padding:8px 10px; font:inherit; font-size:14px; min-width:0;
+  padding:8px 10px; font:inherit; font-size:14px; font-weight:500; min-width:0;
+  transition:border-color .15s;
 }
 input[type=number]{font-variant-numeric:tabular-nums}
-input.cell-input{
-  background:var(--input-bg); color:var(--input-ink);
-  border-color:var(--input-border); font-weight:600;
-}
-input.cell-input:hover{border-color:var(--accent)}
+input[type=number]:hover,input[type=text]:hover,select:hover{border-color:var(--accent)}
 .input-wrap .unit{
   position:absolute; right:11px; font-size:12.5px; color:var(--ink-3);
   pointer-events:none; font-weight:500;
@@ -188,14 +179,17 @@ tr.is-avg:hover{background:var(--accent-wash)}
   display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px;
   font-weight:600; background:var(--accent); color:#fff; white-space:nowrap;
 }
-.badge.ghost{background:var(--link-wash); color:var(--link-ink);
-  border:1px solid color-mix(in srgb,var(--link-ink) 32%, transparent)}
-.linked{color:var(--link-ink); font-weight:650}
+.badge.ghost{background:var(--surface-2); color:var(--ink-2); font-weight:550;
+  border:1px solid var(--border-strong)}
+.derived-cell{font-weight:600}
 .pos{color:var(--pos); font-weight:600}
 .neg{color:var(--neg); font-weight:600}
 .cell-sm{width:120px}
 .cell-xs{width:96px}
 .cell-wide{min-width:184px}
+.cell-type{min-width:172px}
+.cell-event{min-width:216px}
+.cell-mult{width:136px; white-space:nowrap}
 td input[type=number],td input[type=text],td select{padding:6px 9px; font-size:13.5px}
 .row-del{
   width:28px; height:28px; display:grid; place-items:center; padding:0;
@@ -252,10 +246,6 @@ code,.mono{
   font-size:12.5px; background:var(--surface-2); border:1px solid var(--border);
   padding:1.5px 6px; border-radius:6px;
 }
-.legend-swatch{display:inline-block; width:15px; height:15px; border-radius:4px; vertical-align:-3px; margin-right:7px; border:1px solid var(--border-strong)}
-.sw-input{background:var(--input-bg); border-color:var(--input-border)}
-.sw-calc{background:var(--surface); border-color:var(--border-strong)}
-.sw-link{background:var(--link-wash); border-color:var(--link-ink)}
 
 footer{
   max-width:1360px; margin:0 auto; padding:0 20px 44px;
@@ -294,13 +284,13 @@ footer strong{color:var(--ink)}
       <div class="card-head">
         <div class="eyebrow">Osa 1</div>
         <h2>Säännöt (syöttötiedot)</h2>
-        <p class="hint">Muuta vain keltaisia soluja. Kaikki muu lasketaan näistä.</p>
+        <p class="hint">Nämä neljä arvoa ohjaavat koko mallia &ndash; kaikki muu lasketaan niistä.</p>
       </div>
       <div class="card-body">
         <div class="field">
           <label for="in-multiplier">Ansaitsemiskerroin</label>
           <div class="input-wrap has-unit">
-            <input class="cell-input" type="number" id="in-multiplier" min="0" step="0.1" value="3">
+            <input type="number" id="in-multiplier" min="0" step="0.1" value="3">
             <span class="unit">p / &euro;</span>
           </div>
           <p class="desc">Montako pistettä asiakas saa jokaisesta käytetystä eurosta. Vilkkaassa: <em>Bonuspistekerroin</em>.</p>
@@ -308,7 +298,7 @@ footer strong{color:var(--ink)}
         <div class="field">
           <label for="in-ppe">Pisteitä per 1 &euro;</label>
           <div class="input-wrap has-unit">
-            <input class="cell-input" type="number" id="in-ppe" min="1" step="1" value="100">
+            <input type="number" id="in-ppe" min="1" step="1" value="100">
             <span class="unit">p</span>
           </div>
           <p class="desc">Pisteen arvo: tämä määrä pisteitä vastaa yhtä euroa (100&nbsp;p&nbsp;=&nbsp;1&nbsp;&euro;).</p>
@@ -316,7 +306,7 @@ footer strong{color:var(--ink)}
         <div class="field">
           <label for="in-signup">Rekisteröitymisbonus</label>
           <div class="input-wrap has-unit">
-            <input class="cell-input" type="number" id="in-signup" min="0" step="10" value="500">
+            <input type="number" id="in-signup" min="0" step="10" value="500">
             <span class="unit">p</span>
           </div>
           <p class="desc">Pisteet, jotka asiakas saa heti rekisteröityessään.</p>
@@ -324,7 +314,7 @@ footer strong{color:var(--ink)}
         <div class="field">
           <label for="in-avg">Keskiostos</label>
           <div class="input-wrap has-unit">
-            <input class="cell-input" type="number" id="in-avg" min="0" step="5" value="75">
+            <input type="number" id="in-avg" min="0" step="5" value="75">
             <span class="unit">&euro;</span>
           </div>
           <p class="desc">Käytetään Tasot-vertailussa ja korostetaan ansaintataulukossa.</p>
@@ -469,7 +459,7 @@ footer strong{color:var(--ink)}
             <div class="field" style="margin-top:0">
               <label for="in-exprice">Esimerkkituotteen hinta</label>
               <div class="input-wrap has-unit">
-                <input class="cell-input" type="number" id="in-exprice" min="0" step="1" value="50">
+                <input type="number" id="in-exprice" min="0" step="1" value="50">
                 <span class="unit">&euro;</span>
               </div>
             </div>
@@ -495,7 +485,7 @@ footer strong{color:var(--ink)}
           </table>
         </div>
         <div class="table-actions"><button class="btn btn-sm" type="button" data-add="tier">+ Lisää taso</button></div>
-        <p class="note">Taso&nbsp;1 haetaan Malli-välilehdeltä (<span class="linked">vihre&auml;</span> = linkki toiselta välilehdeltä). Muiden tasojen kertoimia voi muuttaa.<br>Yleiskaava: etu-% = kerroin &divide; pisteitä per euro. Tarvittavat ostot = pistehinta &divide; kerroin.</p>
+        <p class="note">Taso&nbsp;1 seuraa Malli-välilehden ansaitsemiskerrointa, joten sitä ei muuteta täällä. Muiden tasojen kertoimia voi muuttaa vapaasti.<br>Yleiskaava: etu-% = kerroin &divide; pisteitä per euro. Tarvittavat ostot = pistehinta &divide; kerroin.</p>
         <h3 class="chart-title">Asiakkaan etu tasoittain</h3>
         <p class="chart-sub">Palautusprosentti ostojen arvosta.</p>
         <div class="chart-wrap">
@@ -536,12 +526,6 @@ footer strong{color:var(--ink)}
         <dl class="deflist">
           <div><dt>Malli</dt><dd>Yhden tason esimerkki: säännöt, ansaitseminen, pistehinnat ja esimerkkiasiakas.</dd></div>
           <div><dt>Tasot</dt><dd>Seuraavat tasot: vain kerroin muuttuu, pistehinnat pysyvät samoina.</dd></div>
-        </dl>
-        <div class="card-head" style="padding-top:22px"><h2>Värikoodit</h2></div>
-        <dl class="deflist">
-          <div><dt><span class="legend-swatch sw-input"></span>Keltainen kenttä</dt><dd>Syöttösolu &ndash; muuta näitä.</dd></div>
-          <div><dt><span class="legend-swatch sw-calc"></span>Tavallinen teksti</dt><dd>Kaava &ndash; lasketaan automaattisesti.</dd></div>
-          <div><dt><span class="legend-swatch sw-link"></span><span class="linked">Vihre&auml; teksti</span></dt><dd>Linkki toiselta välilehdeltä.</dd></div>
         </dl>
         <p class="note" style="padding-bottom:18px">Tämä sovellus toistaa alkuperäisen Google&nbsp;Sheets -laskentamallin (välilehdet Ohje, Malli, Tasot) samoilla kaavoilla. Arvot tallentuvat vain tämän selaimen muistiin.</p>
       </section>
@@ -684,7 +668,7 @@ function delBtn(onClick, disabled){
   return b;
 }
 function numInput(value, step, onInput, cls){
-  var i = el('input', {type:'number', class:'cell-input ' + (cls || ''), step:step || 'any', min:'0'});
+  var i = el('input', {type:'number', class:cls || '', step:step || 'any', min:'0'});
   i.value = value;
   i.addEventListener('input', function(){ onInput(num(i.value)); });
   return i;
@@ -725,7 +709,7 @@ function refreshEarn(){
 function renderProd(){
   var tb = $('tb-prod'); tb.innerHTML = ''; refs.prod = [];
   state.products.forEach(function(p, i){
-    var name = el('input', {type:'text', class:'cell-input'});
+    var name = el('input', {type:'text'});
     name.value = p.name;
     name.addEventListener('input', function(){ p.name = name.value; onChange(); });
     var price = numInput(p.price, '1', function(nv){ p.price = nv; onChange(); });
@@ -761,7 +745,7 @@ function renderTimeline(){
   state.timeline.forEach(function(r, i){
     var step = el('td', {class:'num', text:String(i+1)+'.'});
 
-    var label = el('input', {type:'text', class:'cell-input'});
+    var label = el('input', {type:'text'});
     label.value = r.label || '';
     label.addEventListener('input', function(){ r.label = label.value; save(); });
 
@@ -771,6 +755,7 @@ function renderTimeline(){
       if (k === r.type) o.selected = true;
       sel.appendChild(o);
     });
+    sel.style.minWidth = '160px';
     sel.addEventListener('change', function(){
       r.type = sel.value;
       if (r.type === 'buy' && r.amount == null) r.amount = 0;
@@ -798,7 +783,7 @@ function renderTimeline(){
     }
 
     var cPts = el('td', {class:'num'}), cBal = el('td', {class:'num'});
-    var tr = el('tr', null, step, el('td', null, label), el('td', null, sel), tdAmount, cPts, cBal,
+    var tr = el('tr', null, step, el('td', {class:'cell-event'}, label), el('td', {class:'cell-type'}, sel), tdAmount, cPts, cBal,
       el('td', null, delBtn(function(){ state.timeline.splice(i,1); renderTimeline(); onChange(); }, state.timeline.length <= 1)));
     tb.appendChild(tr);
     refs.time.push({pts:cPts, bal:cBal, prodSel:prodSel});
@@ -825,13 +810,13 @@ function refreshTimeline(rows){
 function renderTier(){
   var tb = $('tb-tier'); tb.innerHTML = ''; refs.tier = [];
   state.tiers.forEach(function(t, i){
-    var name = el('input', {type:'text', class:'cell-input'});
+    var name = el('input', {type:'text'});
     name.value = t.name;
     name.addEventListener('input', function(){ t.name = name.value; onChange(); });
 
-    var tdMult = el('td', {class:'num cell-xs'});
+    var tdMult = el('td', {class:'num cell-mult'});
     if (t.linked){
-      tdMult.appendChild(el('span', {class:'linked', id:'tier-link-'+i}));
+      tdMult.appendChild(el('span', {class:'derived-cell'}));
       tdMult.appendChild(document.createTextNode(' '));
       tdMult.appendChild(el('span', {class:'badge ghost', text:'Malli'}));
     } else {

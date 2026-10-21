@@ -13,8 +13,6 @@
   --border:#e2e6ec;    --border-strong:#cfd5de;
   --ink:#14161a;       --ink-2:#56606e;     --ink-3:#848d9b;
   --accent:#2a78d6;    --accent-ink:#1c5cab; --accent-wash:#eaf2fd;
-  --input-bg:#fff8e0;  --input-border:#f0dca6;
-  --link-ink:#146c2e;
   --shadow:0 1px 2px rgba(16,24,40,.05), 0 8px 24px -12px rgba(16,24,40,.14);
 }
 @media (prefers-color-scheme: dark){
@@ -24,8 +22,6 @@
     --border:#2b313a;  --border-strong:#3a424d;
     --ink:#eef1f5;     --ink-2:#a7b1c0;     --ink-3:#78828f;
     --accent:#3987e5;  --accent-ink:#86b6ef; --accent-wash:#152435;
-    --input-bg:#2b2616; --input-border:#4a411f;
-    --link-ink:#7fd79b;
     --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -14px rgba(0,0,0,.7);
   }
 }
@@ -35,8 +31,6 @@
   --border:#2b313a;  --border-strong:#3a424d;
   --ink:#eef1f5;     --ink-2:#a7b1c0;     --ink-3:#78828f;
   --accent:#3987e5;  --accent-ink:#86b6ef; --accent-wash:#152435;
-  --input-bg:#2b2616; --input-border:#4a411f;
-  --link-ink:#7fd79b;
   --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -14px rgba(0,0,0,.7);
 }
 *,*::before,*::after{box-sizing:border-box}
@@ -97,10 +91,6 @@ pre{
   font-size:13px; line-height:1.75;
 }
 pre code{background:none; border:0; padding:0; white-space:pre}
-.swatch{
-  display:inline-block; width:14px; height:14px; border-radius:4px; vertical-align:-2px;
-  margin-right:6px; background:var(--input-bg); border:1px solid var(--input-border);
-}
 footer{
   margin-top:40px; padding-top:20px; border-top:1px solid var(--border);
   font-size:13px; color:var(--ink-3); line-height:1.6;
@@ -180,8 +170,9 @@ etu suhteessa ostoihin = pisteillä saatu etu ÷ maksettu yhteensä</code></pre>
 
 <h2>Miten sovellusta käytetään</h2>
 <ol>
-  <li>Muuta vasemman palstan <span class="swatch"></span><strong>keltaisia syöttökenttiä</strong>.
-      Kaikki muu lasketaan niistä automaattisesti.</li>
+  <li>Muuta vasemman palstan <strong>neljää syöttökenttää</strong>. Kaikki muu
+      &ndash; pisteen arvo, palautusprosentti, pistehinnat, tasot ja aikajana &ndash;
+      lasketaan niistä automaattisesti.</li>
   <li><strong>Malli</strong>-välilehdellä näet ansainnan, tuotteiden pistehinnat ja
       esimerkkiasiakkaan vuoden.</li>
   <li><strong>Tasot</strong>-välilehdellä vertaat tasoja. Taso&nbsp;1 hakee kertoimensa
