@@ -556,3 +556,298 @@ footer .card-body{padding:16px 18px}
     (luettu 20.10.2026). Esimerkkiluvut ovat oletuksia, ei päätettyjä arvoja.
   </div></div>
 </footer>
+<script>
+(function(){
+"use strict";
+
+/* ===================== apurit ===================== */
+var $ = function(id){ return document.getElementById(id); };
+function el(tag, attrs){
+  var n = document.createElement(tag), k;
+  if (attrs) for (k in attrs){
+    if (k === 'class') n.className = attrs[k];
+    else if (k === 'text') n.textContent = attrs[k];
+    else if (k === 'html') n.innerHTML = attrs[k];
+    else n.setAttribute(k, attrs[k]);
+  }
+  for (var i = 2; i < arguments.length; i++){
+    var c = arguments[i];
+    if (c == null) continue;
+    n.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+  }
+  return n;
+}
+function nf(min, max){ return new Intl.NumberFormat('fi-FI', {minimumFractionDigits:min, maximumFractionDigits:max}); }
+var F0 = nf(0,0), F2 = nf(2,2), F1 = nf(1,1), F4 = nf(4,4);
+function fmtEur(v){ return F2.format(v) + ' €'; }
+function fmtPts(v){ return F0.format(v) + ' p'; }
+function fmtPtsSigned(v){ return (v > 0 ? '+' : '') + F0.format(v) + ' p'; }
+function fmtPct(v){ return F1.format(v * 100) + ' %'; }
+function num(v){ var n = parseFloat(v); return isFinite(n) ? n : 0; }
+/* Excelin PYÖRISTÄ: puolikkaat nollasta poispäin */
+function xround(v, d){
+  var f = Math.pow(10, d || 0);
+  return (v < 0 ? -1 : 1) * Math.round(Math.abs(v) * f) / f;
+}
+
+/* ===================== tila ===================== */
+var STORE = 'bonuspisteet-malli-v1';
+var uid = 0;
+function nextId(){ return 'p' + (++uid); }
+
+function defaults(){
+  var a = nextId(), b = nextId(), c = nextId();
+  return {
+    multiplier: 3, ppe: 100, signup: 500, avgOrder: 75, examplePrice: 50,
+    earn: [30, 75, 100, 300],
+    products: [
+      {id:a, name:'Uimalakki', price:10},
+      {id:b, name:'Uimalasit', price:20},
+      {id:c, name:'Uimahousut', price:50}
+    ],
+    timeline: [
+      {type:'signup', label:'Rekisteröityy'},
+      {type:'buy',    label:'Ostaa uimalasit',  amount:20},
+      {type:'buy',    label:'Ostaa varusteita', amount:75},
+      {type:'buy',    label:'Ostaa seuratakin', amount:230},
+      {type:'redeem', label:'Ostaa uimalakin pisteillä', productId:a}
+    ],
+    tiers: [
+      {name:'Taso 1', linked:true, multiplier:3},
+      {name:'Taso 2', linked:false, multiplier:4},
+      {name:'Taso 3', linked:false, multiplier:5}
+    ]
+  };
+}
+var state = defaults();
+
+function save(){
+  try { localStorage.setItem(STORE, JSON.stringify(state)); } catch(e){}
+}
+function load(){
+  try {
+    var raw = localStorage.getItem(STORE);
+    if (!raw) return;
+    var s = JSON.parse(raw);
+    if (!s || !s.products || !s.timeline || !s.tiers || !s.earn) return;
+    state = s;
+    state.products.forEach(function(p){
+      var n = parseInt(String(p.id).replace(/\D/g,''), 10);
+      if (isFinite(n) && n > uid) uid = n;
+    });
+  } catch(e){}
+}
+
+/* ===================== laskenta ===================== */
+function pointValue(){ return state.ppe > 0 ? 1 / state.ppe : 0; }
+function benefit(){ return state.multiplier * pointValue(); }
+function pointPrice(price){ return xround(price * state.ppe, 0); }
+function earnedPoints(eur, mult){ return xround(eur * (mult === undefined ? state.multiplier : mult), 0); }
+function productById(id){
+  for (var i = 0; i < state.products.length; i++) if (state.products[i].id === id) return state.products[i];
+  return null;
+}
+
+/* Rakentaa esimerkkiasiakkaan rivit laskettuine arvoineen. */
+function timelineRows(){
+  var bal = 0, out = [];
+  state.timeline.forEach(function(r, i){
+    var paid = 0, pts = 0, prod = null;
+    if (r.type === 'signup'){ pts = state.signup; }
+    else if (r.type === 'buy'){ paid = num(r.amount); pts = earnedPoints(paid); }
+    else { prod = productById(r.productId); pts = prod ? -pointPrice(prod.price) : 0; }
+    bal += pts;
+    out.push({ i:i, row:r, paid:paid, pts:pts, balance:bal, product:prod, short:(bal < 0) });
+  });
+  return out;
+}
+function totals(rows){
+  var paid = 0, gain = 0, bal = rows.length ? rows[rows.length-1].balance : 0;
+  rows.forEach(function(r){
+    paid += r.paid;
+    if (r.row.type === 'redeem' && r.product) gain += r.product.price;
+  });
+  return { paid:paid, gain:gain, balance:bal, benefit: paid === 0 ? 0 : gain / paid };
+}
+
+/* ===================== taulukko: ansaitseminen ===================== */
+function delBtn(onClick, disabled){
+  var b = el('button', {class:'row-del', type:'button', title:'Poista rivi', 'aria-label':'Poista rivi', html:'&times;'});
+  if (disabled) b.disabled = true; else b.addEventListener('click', onClick);
+  return b;
+}
+function numInput(value, step, onInput, cls){
+  var i = el('input', {type:'number', class:'cell-input ' + (cls || ''), step:step || 'any', min:'0'});
+  i.value = value;
+  i.addEventListener('input', function(){ onInput(num(i.value)); });
+  return i;
+}
+
+var refs = { earn:[], prod:[], time:[], tier:[] };
+
+function renderEarn(){
+  var tb = $('tb-earn'); tb.innerHTML = ''; refs.earn = [];
+  state.earn.forEach(function(v, i){
+    var cPts = el('td', {class:'num'}), cWorth = el('td', {class:'num'}), cCalc = el('td', {class:'calc'});
+    var tdIn = el('td', {class:'num'});
+    tdIn.appendChild(numInput(v, '5', function(nv){ state.earn[i] = nv; onChange(); }));
+    var tr = el('tr', null, tdIn, cPts, cWorth, cCalc,
+      el('td', null, delBtn(function(){ state.earn.splice(i,1); renderEarn(); onChange(); }, state.earn.length <= 1)));
+    tb.appendChild(tr);
+    refs.earn.push({tr:tr, pts:cPts, worth:cWorth, calc:cCalc});
+  });
+}
+function refreshEarn(){
+  var pv = pointValue();
+  state.earn.forEach(function(v, i){
+    var r = refs.earn[i]; if (!r) return;
+    var p = earnedPoints(v);
+    r.pts.textContent = fmtPts(p);
+    r.worth.textContent = fmtEur(p * pv);
+    r.calc.textContent = F0.format(v) + ' € × ' + F0.format(state.multiplier) + ' p/€';
+    var isAvg = Math.abs(v - state.avgOrder) < 1e-9;
+    r.tr.className = isAvg ? 'is-avg' : '';
+    if (isAvg && !r.badge){
+      r.badge = el('span', {class:'badge', text:'keskiostos'});
+      r.calc.appendChild(document.createTextNode(' '));
+      r.calc.appendChild(r.badge);
+    } else if (!isAvg && r.badge){ r.badge = null; }
+  });
+}
+
+/* ===================== taulukko: tuotteet ===================== */
+function renderProd(){
+  var tb = $('tb-prod'); tb.innerHTML = ''; refs.prod = [];
+  state.products.forEach(function(p, i){
+    var name = el('input', {type:'text', class:'cell-input'});
+    name.value = p.name;
+    name.addEventListener('input', function(){ p.name = name.value; onChange(); });
+    var price = numInput(p.price, '1', function(nv){ p.price = nv; onChange(); });
+    var cPP = el('td', {class:'num'}), cNeed = el('td', {class:'num'});
+    var tr = el('tr', null,
+      el('td', null, name),
+      el('td', {class:'num cell-sm'}, price),
+      cPP, cNeed,
+      el('td', null, delBtn(function(){
+        state.products.splice(i,1);
+        var fallback = state.products.length ? state.products[0].id : null;
+        state.timeline.forEach(function(r){ if (r.type === 'redeem' && r.productId === p.id) r.productId = fallback; });
+        renderProd(); renderTimeline(); onChange();
+      }, state.products.length <= 1)));
+    tb.appendChild(tr);
+    refs.prod.push({pp:cPP, need:cNeed});
+  });
+}
+function refreshProd(){
+  state.products.forEach(function(p, i){
+    var r = refs.prod[i]; if (!r) return;
+    var pp = pointPrice(p.price);
+    r.pp.textContent = fmtPts(pp);
+    r.need.textContent = state.multiplier > 0 ? fmtEur(pp / state.multiplier) : '–';
+  });
+}
+
+/* ===================== taulukko: esimerkkiasiakas ===================== */
+var TYPES = { signup:'Rekisteröityminen', buy:'Osto', redeem:'Lunastus pisteillä' };
+
+function renderTimeline(){
+  var tb = $('tb-time'); tb.innerHTML = ''; refs.time = [];
+  state.timeline.forEach(function(r, i){
+    var step = el('td', {class:'num', text:String(i+1)+'.'});
+
+    var label = el('input', {type:'text', class:'cell-input'});
+    label.value = r.label || '';
+    label.addEventListener('input', function(){ r.label = label.value; save(); });
+
+    var sel = el('select');
+    Object.keys(TYPES).forEach(function(k){
+      var o = el('option', {value:k, text:TYPES[k]});
+      if (k === r.type) o.selected = true;
+      sel.appendChild(o);
+    });
+    sel.addEventListener('change', function(){
+      r.type = sel.value;
+      if (r.type === 'buy' && r.amount == null) r.amount = 0;
+      if (r.type === 'redeem' && !productById(r.productId)) r.productId = state.products.length ? state.products[0].id : null;
+      renderTimeline(); onChange();
+    });
+
+    var tdAmount = el('td', {class:'num cell-sm'});
+    var prodSel = null;
+    if (r.type === 'buy'){
+      tdAmount.appendChild(numInput(r.amount, '5', function(nv){ r.amount = nv; onChange(); }));
+    } else if (r.type === 'redeem'){
+      prodSel = el('select', {'aria-label':'Lunastettava tuote'});
+      state.products.forEach(function(p){
+        var o = el('option', {value:p.id, text:p.name});
+        if (p.id === r.productId) o.selected = true;
+        prodSel.appendChild(o);
+      });
+      prodSel.addEventListener('change', function(){ r.productId = prodSel.value; onChange(); });
+      tdAmount.appendChild(prodSel);
+      tdAmount.className = 'cell-sm';
+    } else {
+      tdAmount.textContent = '–';
+    }
+
+    var cPts = el('td', {class:'num'}), cBal = el('td', {class:'num'});
+    var tr = el('tr', null, step, el('td', null, label), el('td', null, sel), tdAmount, cPts, cBal,
+      el('td', null, delBtn(function(){ state.timeline.splice(i,1); renderTimeline(); onChange(); }, state.timeline.length <= 1)));
+    tb.appendChild(tr);
+    refs.time.push({pts:cPts, bal:cBal, prodSel:prodSel});
+  });
+}
+function refreshTimeline(rows){
+  rows.forEach(function(d, i){
+    var r = refs.time[i]; if (!r) return;
+    r.pts.textContent = fmtPtsSigned(d.pts);
+    r.pts.className = 'num ' + (d.pts < 0 ? 'neg' : d.pts > 0 ? 'pos' : '');
+    r.bal.textContent = fmtPts(d.balance);
+    r.bal.className = 'num' + (d.short ? ' neg' : '');
+    r.bal.title = d.short ? 'Pisteet eivät riitä tähän lunastukseen.' : '';
+    if (r.prodSel){
+      for (var k = 0; k < r.prodSel.options.length; k++){
+        var p = state.products[k];
+        if (p) r.prodSel.options[k].textContent = p.name + ' – ' + fmtPts(pointPrice(p.price));
+      }
+    }
+  });
+}
+
+/* ===================== taulukko: tasot ===================== */
+function renderTier(){
+  var tb = $('tb-tier'); tb.innerHTML = ''; refs.tier = [];
+  state.tiers.forEach(function(t, i){
+    var name = el('input', {type:'text', class:'cell-input'});
+    name.value = t.name;
+    name.addEventListener('input', function(){ t.name = name.value; onChange(); });
+
+    var tdMult = el('td', {class:'num cell-xs'});
+    if (t.linked){
+      tdMult.appendChild(el('span', {class:'linked', id:'tier-link-'+i}));
+      tdMult.appendChild(document.createTextNode(' '));
+      tdMult.appendChild(el('span', {class:'badge ghost', text:'Malli'}));
+    } else {
+      tdMult.appendChild(numInput(t.multiplier, '0.5', function(nv){ t.multiplier = nv; onChange(); }));
+    }
+    var cBen = el('td', {class:'num'}), cEarn = el('td', {class:'num'}), cReach = el('td', {class:'num'});
+    var tr = el('tr', null, el('td', null, name), tdMult, cBen, cEarn, cReach,
+      el('td', null, delBtn(function(){ state.tiers.splice(i,1); renderTier(); onChange(); }, t.linked || state.tiers.length <= 1)));
+    tb.appendChild(tr);
+    refs.tier.push({mult:tdMult.firstChild, ben:cBen, earn:cEarn, reach:cReach, linked:t.linked});
+  });
+}
+function tierMult(t){ return t.linked ? state.multiplier : num(t.multiplier); }
+function refreshTier(){
+  var exPP = pointPrice(state.examplePrice);
+  $('d-exPoints').textContent = fmtPts(exPP);
+  $('th-avg').textContent = F0.format(state.avgOrder) + ' €';
+  state.tiers.forEach(function(t, i){
+    var r = refs.tier[i]; if (!r) return;
+    var m = tierMult(t);
+    if (r.linked && r.mult) r.mult.textContent = F1.format(m) + ' p/€';
+    r.ben.textContent = state.ppe > 0 ? fmtPct(m / state.ppe) : '–';
+    r.earn.textContent = fmtPts(xround(state.avgOrder * m, 0));
+    r.reach.textContent = m > 0 ? fmtEur(exPP / m) : '–';
+  });
+}
