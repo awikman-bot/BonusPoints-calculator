@@ -111,7 +111,8 @@ button{font:inherit; color:inherit}
 }
 .sidebar{position:sticky; top:84px; display:flex; flex-direction:column; gap:16px}
 @media (max-width:1040px){ .sidebar{position:static} }
-.card-head{padding:16px 18px 0}
+.card-head{padding:16px 18px 14px}
+.card-head + .card-body{padding-top:4px}
 .card-body{padding:16px 18px 18px}
 .eyebrow{
   font-size:11px; font-weight:650; letter-spacing:.09em; text-transform:uppercase;
@@ -197,6 +198,7 @@ tr.is-avg:hover{background:var(--accent-wash)}
 .neg{color:var(--neg); font-weight:600}
 .cell-sm{width:120px}
 .cell-xs{width:96px}
+.cell-wide{min-width:184px}
 td input[type=number],td input[type=text],td select{padding:6px 9px; font-size:13.5px}
 .row-del{
   width:28px; height:28px; display:grid; place-items:center; padding:0;
@@ -212,7 +214,7 @@ tfoot td{border-top:1px solid var(--border-strong); font-weight:600; background:
 }
 
 /* ---------- totals ---------- */
-.totals{display:grid; grid-template-columns:repeat(auto-fit,minmax(176px,1fr)); gap:12px; padding:16px 18px 0}
+.totals{display:grid; grid-template-columns:repeat(auto-fit,minmax(176px,1fr)); gap:12px; padding:18px 18px 0}
 .total{padding:13px 14px; border:1px solid var(--border); border-radius:11px; background:var(--surface-2)}
 .total .k{font-size:12px; color:var(--ink-2); display:block; line-height:1.35}
 .total .v{font-size:20px; font-weight:650; font-variant-numeric:tabular-nums; display:block; margin-top:4px}
@@ -234,7 +236,7 @@ tfoot td{border-top:1px solid var(--border-strong); font-weight:600; background:
 .tip[data-show="1"]{opacity:1}
 
 /* ---------- ohje ---------- */
-.rules{display:grid; gap:12px; padding:16px 18px 0}
+.rules{display:grid; gap:12px; padding:2px 18px 0}
 .rule{display:flex; gap:13px; padding:14px; border:1px solid var(--border); border-radius:11px; background:var(--surface-2)}
 .rule .n{
   flex:none; width:27px; height:27px; border-radius:8px; background:var(--accent); color:#fff;
@@ -281,7 +283,7 @@ footer .card-body{padding:16px 18px}
     <div class="topbar-actions">
       <button class="btn" id="btn-csv" type="button" title="Lataa tuotteiden pistehinnat CSV-tiedostona">&#8595; Tuotteet CSV</button>
       <button class="btn" id="btn-reset" type="button" title="Palauta kaikki arvot mallin oletuksiin">&#8634; Oletukset</button>
-      <button class="btn" id="btn-theme" type="button" aria-label="Vaihda vaalean ja tumman teeman välillä">&#9681; Teema</button>
+      <button class="btn" id="btn-theme" type="button" aria-label="Vaihda vaalean ja tumman teeman välillä"><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.4A6.6 6.6 0 0 1 8 14.6Z" fill="currentColor"/></svg> Teema</button>
     </div>
   </div>
 </div>
@@ -707,11 +709,10 @@ function refreshEarn(){
     r.calc.textContent = F0.format(v) + ' € × ' + F0.format(state.multiplier) + ' p/€';
     var isAvg = Math.abs(v - state.avgOrder) < 1e-9;
     r.tr.className = isAvg ? 'is-avg' : '';
-    if (isAvg && !r.badge){
-      r.badge = el('span', {class:'badge', text:'keskiostos'});
+    if (isAvg){
       r.calc.appendChild(document.createTextNode(' '));
-      r.calc.appendChild(r.badge);
-    } else if (!isAvg && r.badge){ r.badge = null; }
+      r.calc.appendChild(el('span', {class:'badge', text:'keskiostos'}));
+    }
   });
 }
 
@@ -784,8 +785,9 @@ function renderTimeline(){
         prodSel.appendChild(o);
       });
       prodSel.addEventListener('change', function(){ r.productId = prodSel.value; onChange(); });
+      prodSel.style.minWidth = '168px';
       tdAmount.appendChild(prodSel);
-      tdAmount.className = 'cell-sm';
+      tdAmount.className = 'cell-wide';
     } else {
       tdAmount.textContent = '–';
     }
@@ -851,3 +853,265 @@ function refreshTier(){
     r.reach.textContent = m > 0 ? fmtEur(exPP / m) : '–';
   });
 }
+
+/* ===================== kaaviot ===================== */
+var SVGNS = 'http://www.w3.org/2000/svg';
+function s(tag, attrs){
+  var n = document.createElementNS(SVGNS, tag);
+  for (var k in attrs) n.setAttribute(k, attrs[k]);
+  return n;
+}
+function cssVar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+function niceTicks(lo, hi, count){
+  if (hi === lo){ hi = lo + 1; }
+  var span = hi - lo, raw = span / (count || 4);
+  var mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  var n = raw / mag;
+  var step = (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * mag;
+  var start = Math.floor(lo / step) * step, out = [];
+  for (var i = 0; start + i * step <= hi + step * 1e-9; i++) out.push(start + i * step);
+  if (out[out.length-1] < hi) out.push(out[out.length-1] + step);
+  return out;
+}
+/* Pyöristetty datapää, suora perustaso. */
+function barPath(x, w, yBase, yEnd, r){
+  var up = yEnd < yBase;
+  r = Math.min(r, w / 2, Math.abs(yEnd - yBase));
+  var d = up ? 1 : -1;
+  return 'M' + x + ',' + yBase +
+    ' L' + x + ',' + (yEnd + r*d) +
+    ' Q' + x + ',' + yEnd + ' ' + (x + r) + ',' + yEnd +
+    ' L' + (x + w - r) + ',' + yEnd +
+    ' Q' + (x + w) + ',' + yEnd + ' ' + (x + w) + ',' + (yEnd + r*d) +
+    ' L' + (x + w) + ',' + yBase + ' Z';
+}
+
+function drawBars(svgId, tipId, data, opts){
+  var svg = $(svgId), tip = $(tipId);
+  if (!svg || !data.length) return;
+  var W = Math.round(svg.getBoundingClientRect().width);
+  if (!W){ svg.dataset.dirty = '1'; return; }
+  svg.dataset.dirty = '';
+  var H = opts.height || 250;
+  var m = {t:26, r:8, b:38, l:opts.left || 58};
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+  svg.setAttribute('width', W); svg.setAttribute('height', H);
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+
+  var iw = Math.max(40, W - m.l - m.r), ih = H - m.t - m.b;
+  var vals = data.map(function(d){ return d.value; });
+  var lo = Math.min.apply(null, vals.concat([0])), hi = Math.max.apply(null, vals.concat([0]));
+  var ticks = niceTicks(lo, hi, 4);
+  var tLo = ticks[0], tHi = ticks[ticks.length-1];
+  var y = function(v){ return m.t + ih - ((v - tLo) / (tHi - tLo)) * ih; };
+
+  var ink2 = cssVar('--ink-2'), ink3 = cssVar('--ink-3'), grid = cssVar('--grid'), series = cssVar('--series-1');
+
+  ticks.forEach(function(t){
+    svg.appendChild(s('line', {x1:m.l, x2:m.l+iw, y1:y(t), y2:y(t), stroke:grid, 'stroke-width':1, 'shape-rendering':'crispEdges'}));
+    var lab = s('text', {x:m.l-10, y:y(t)+4, 'text-anchor':'end', 'font-size':11, fill:ink3});
+    lab.setAttribute('style', 'font-variant-numeric:tabular-nums');
+    lab.textContent = opts.tick(t);
+    svg.appendChild(lab);
+  });
+
+  var band = iw / data.length;
+  var bw = Math.min(24, band * 0.55);
+  var yBase = y(0);
+  var labelAll = data.length <= 6;
+  var maxV = Math.max.apply(null, vals);
+
+  data.forEach(function(d, i){
+    var cx = m.l + band * i + band / 2, x = cx - bw / 2;
+    svg.appendChild(s('path', {d:barPath(x, bw, yBase, y(d.value), 4), fill:series}));
+
+    var xl = s('text', {x:cx, y:H - m.b + 17, 'text-anchor':'middle', 'font-size':11.5, fill:ink3});
+    xl.textContent = d.label;
+    svg.appendChild(xl);
+
+    if (labelAll || d.value === maxV || i === data.length - 1){
+      var above = d.value >= 0;
+      var vl = s('text', {x:cx, y:y(d.value) + (above ? -9 : 17), 'text-anchor':'middle', 'font-size':11.5, 'font-weight':600, fill:ink2});
+      vl.setAttribute('style', 'font-variant-numeric:tabular-nums');
+      vl.textContent = d.text;
+      svg.appendChild(vl);
+    }
+
+    var hit = s('rect', {x:m.l + band*i, y:m.t, width:band, height:ih, fill:'transparent'});
+    hit.style.cursor = 'pointer';
+    hit.addEventListener('mousemove', function(){
+      tip.innerHTML = '<strong>' + d.tipTitle + '</strong><br>' + d.tipBody;
+      tip.style.left = (cx + 18) + 'px';
+      tip.style.top = (y(Math.max(d.value, 0)) + 4) + 'px';
+      tip.setAttribute('data-show', '1');
+    });
+    hit.addEventListener('mouseleave', function(){ tip.setAttribute('data-show', '0'); });
+    svg.appendChild(hit);
+  });
+
+  if (tLo < 0) svg.appendChild(s('line', {x1:m.l, x2:m.l+iw, y1:yBase, y2:yBase, stroke:cssVar('--border-strong'), 'stroke-width':1, 'shape-rendering':'crispEdges'}));
+}
+
+function drawCharts(rows){
+  drawBars('chart-balance', 'tip-balance',
+    rows.map(function(d, i){
+      return {
+        value: d.balance, label: String(i+1), text: F0.format(d.balance),
+        tipTitle: (i+1) + '. ' + (d.row.label || TYPES[d.row.type]),
+        tipBody: 'Saldo ' + fmtPts(d.balance) + ' &middot; ' + fmtPtsSigned(d.pts) +
+                 (d.paid ? ' &middot; maksettu ' + fmtEur(d.paid) : '')
+      };
+    }), { tick:function(t){ return F0.format(t); }, left:62 });
+
+  drawBars('chart-tiers', 'tip-tiers',
+    state.tiers.map(function(t){
+      var m = tierMult(t), b = state.ppe > 0 ? m / state.ppe : 0;
+      return {
+        value: b * 100, label: t.name, text: F1.format(b*100) + ' %',
+        tipTitle: t.name,
+        tipBody: 'Kerroin ' + F1.format(m) + ' p/€ &middot; etu ' + fmtPct(b) + '<br>Keskiostos ' +
+                 F0.format(state.avgOrder) + ' € → ' + fmtPts(xround(state.avgOrder * m, 0))
+      };
+    }), { tick:function(t){ return F1.format(t) + ' %'; }, left:58, height:220 });
+}
+
+/* ===================== kokoava päivitys ===================== */
+function onChange(){
+  state.multiplier  = num($('in-multiplier').value);
+  state.ppe         = num($('in-ppe').value);
+  state.signup      = num($('in-signup').value);
+  state.avgOrder    = num($('in-avg').value);
+  state.examplePrice= num($('in-exprice').value);
+  recalc();
+  save();
+}
+
+function recalc(){
+  var pv = pointValue(), ben = benefit();
+  $('d-benefit').textContent   = fmtPct(ben);
+  $('d-pointvalue').textContent= F4.format(pv) + ' €';
+  $('d-factor').textContent    = '× ' + F0.format(state.ppe);
+
+  $('r-mult').textContent   = F0.format(state.multiplier);
+  $('r-ppe').textContent    = F0.format(state.ppe);
+  $('r-ppe2').textContent   = F0.format(state.ppe);
+  $('r-pv').textContent     = F4.format(pv);
+  $('r-factor').textContent = F0.format(state.ppe);
+  $('r-benefit').textContent= F1.format(ben * 100);
+
+  refreshEarn();
+  refreshProd();
+  var rows = timelineRows();
+  refreshTimeline(rows);
+  var t = totals(rows);
+  $('t-paid').textContent    = fmtEur(t.paid);
+  $('t-gain').textContent    = fmtEur(t.gain);
+  $('t-balance').textContent = fmtPts(t.balance);
+  $('t-benefit').textContent = fmtPct(t.benefit);
+  refreshTier();
+  drawCharts(rows);
+}
+
+/* ===================== välilehdet ===================== */
+var TABS = [['tab-malli','panel-malli'], ['tab-tasot','panel-tasot'], ['tab-ohje','panel-ohje']];
+function selectTab(id, pushHash){
+  if (pushHash !== false){
+    var h = id.replace('tab-', '');
+    if (location.hash.slice(1) !== h) history.replaceState(null, '', '#' + h);
+  }
+  TABS.forEach(function(p){
+    var on = p[0] === id;
+    $(p[0]).setAttribute('aria-selected', on ? 'true' : 'false');
+    $(p[1]).hidden = !on;
+  });
+  var rows = timelineRows();
+  drawCharts(rows);
+}
+TABS.forEach(function(p, i){
+  $(p[0]).addEventListener('click', function(){ selectTab(p[0]); });
+  $(p[0]).addEventListener('keydown', function(e){
+    var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+    if (!d) return;
+    e.preventDefault();
+    var n = TABS[(i + d + TABS.length) % TABS.length][0];
+    selectTab(n); $(n).focus();
+  });
+});
+
+/* ===================== teema, CSV, oletukset ===================== */
+$('btn-theme').addEventListener('click', function(){
+  var cur = document.documentElement.getAttribute('data-theme');
+  var dark = cur ? cur === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+  var next = dark ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  try { localStorage.setItem(STORE + '-theme', next); } catch(e){}
+  drawCharts(timelineRows());
+});
+
+$('btn-csv').addEventListener('click', function(){
+  var rows = [['Tuote','Hinta (EUR)','Pistehinta','Ostoja tarvitaan (EUR)']];
+  state.products.forEach(function(p){
+    var pp = pointPrice(p.price);
+    rows.push([p.name, F2.format(p.price), String(pp), state.multiplier > 0 ? F2.format(pp / state.multiplier) : '']);
+  });
+  var csv = '﻿' + rows.map(function(r){
+    return r.map(function(c){ return '"' + String(c).replace(/"/g, '""') + '"'; }).join(';');
+  }).join('\r\n');
+  var url = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
+  var a = el('a', {href:url, download:'bonuspistehinnat.csv'});
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+});
+
+$('btn-reset').addEventListener('click', function(){
+  if (!window.confirm('Palautetaanko kaikki arvot alkuperäisen laskentamallin oletuksiin?')) return;
+  try { localStorage.removeItem(STORE); } catch(e){}
+  uid = 0; state = defaults();
+  boot();
+});
+
+['in-multiplier','in-ppe','in-signup','in-avg','in-exprice'].forEach(function(id){
+  $(id).addEventListener('input', onChange);
+});
+
+/* ===================== käynnistys ===================== */
+function syncInputs(){
+  $('in-multiplier').value = state.multiplier;
+  $('in-ppe').value        = state.ppe;
+  $('in-signup').value     = state.signup;
+  $('in-avg').value        = state.avgOrder;
+  $('in-exprice').value    = state.examplePrice;
+}
+function boot(){
+  syncInputs();
+  renderEarn(); renderProd(); renderTimeline(); renderTier();
+  recalc();
+}
+
+try {
+  var th = localStorage.getItem(STORE + '-theme');
+  if (th) document.documentElement.setAttribute('data-theme', th);
+} catch(e){}
+
+load();
+boot();
+
+var hash = location.hash.slice(1);
+if (hash && $('tab-' + hash)) selectTab('tab-' + hash, false);
+
+window.addEventListener('hashchange', function(){
+  var h = location.hash.slice(1);
+  if (h && $('tab-' + h)) selectTab('tab-' + h, false);
+});
+
+var raf = 0;
+window.addEventListener('resize', function(){
+  if (raf) cancelAnimationFrame(raf);
+  raf = requestAnimationFrame(function(){ drawCharts(timelineRows()); });
+});
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ drawCharts(timelineRows()); });
+})();
+</script>
+</body>
+</html>
