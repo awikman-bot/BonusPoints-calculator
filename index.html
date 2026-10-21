@@ -173,6 +173,9 @@ tbody tr:last-child td{border-bottom:0}
 tbody tr:hover{background:var(--surface-2)}
 td.num,th.num{text-align:right; font-variant-numeric:tabular-nums}
 td.calc{color:var(--ink-3); font-size:13px; white-space:nowrap}
+@keyframes rowIn{ from{background:var(--accent-wash)} to{background:transparent} }
+tr.row-new{animation:rowIn 1.4s ease-out}
+@media (prefers-reduced-motion: reduce){ tr.row-new{animation:none} }
 tr.is-avg{background:var(--accent-wash)}
 tr.is-avg:hover{background:var(--accent-wash)}
 .badge{
@@ -1030,24 +1033,100 @@ TABS.forEach(function(p, i){
 });
 
 /* ===================== rivien lisäys ===================== */
+/* Uusi rivi saa satunnaisen esimerkkiarvon: kiinteä oletus toistaisi samaa
+   lukua, eikä mallin tarkoitus ole syöttää dataa vaan kokeilla lukuja. */
+/* Hintahaarukka tuotekohtaisesti: yksi yhteinen väli tuottaisi 90 euron
+   suihkugeelejä, eikä mallista saisi realistista kuvaa. */
+var PRODUCTS = [
+  {n:'Uimalakki',       min:10,  max:25},
+  {n:'Uimalasit',       min:15,  max:60},
+  {n:'Uimahousut',      min:25,  max:70},
+  {n:'Uimapuku',        min:40,  max:110},
+  {n:'Kilpauimapuku',   min:90,  max:250},
+  {n:'Uintiräpylät',    min:20,  max:45},
+  {n:'Käsiräpylät',     min:15,  max:35},
+  {n:'Uimalauta',       min:15,  max:35},
+  {n:'Snorkkeli',       min:20,  max:45},
+  {n:'Nenäklipsi',      min:5,   max:10},
+  {n:'Korvatulpat',     min:5,   max:15},
+  {n:'Uimakassi',       min:15,  max:40},
+  {n:'Mikrokuitupyyhe', min:15,  max:35},
+  {n:'Kylpytakki',      min:40,  max:90},
+  {n:'Juomapullo',      min:10,  max:25},
+  {n:'Vesijuoksuvyö',   min:30,  max:70},
+  {n:'Uintikello',      min:90,  max:300},
+  {n:'Treenikassi',     min:25,  max:70},
+  {n:'Suihkugeeli',     min:5,   max:15},
+  {n:'Kuivapussi',      min:15,  max:35}
+];
+var PURCHASE_LABELS = [
+  'Ostaa varusteita', 'Ostaa uimapuvun', 'Ostaa seuratakin', 'Täydentää varusteita',
+  'Ostaa lahjakortin', 'Kausiostos', 'Ostaa kilpavarusteet', 'Ostaa lasten varusteet',
+  'Ostaa uudet räpylät', 'Ostaa treenivälineet', 'Kevätostos', 'Syysostos'
+];
+
+function pick(list){ return list[Math.floor(Math.random() * list.length)]; }
+function pickUnused(list, used){
+  var free = list.filter(function(x){ return used.indexOf(x) < 0; });
+  return pick(free.length ? free : list);
+}
+/* Satunnainen luku väliltä [min, max] pyöristettynä step:n monikertaan. */
+function randStep(min, max, step){
+  var lo = Math.ceil(min / step), hi = Math.floor(max / step);
+  if (hi < lo) return lo * step;
+  return (lo + Math.floor(Math.random() * (hi - lo + 1))) * step;
+}
+function randStepUnused(min, max, step, used){
+  for (var i = 0; i < 12; i++){
+    var v = randStep(min, max, step);
+    if (used.indexOf(v) < 0) return v;
+  }
+  return randStep(min, max, step);
+}
+/* Korostaa juuri lisätyn rivin, jottei satunnainen arvo jää huomaamatta. */
+function flashLast(tbodyId){
+  var tr = document.querySelector('#' + tbodyId + ' tr:last-child');
+  if (!tr) return;
+  tr.classList.add('row-new');
+  setTimeout(function(){ tr.classList.remove('row-new'); }, 1400);
+}
+
 function addRow(kind){
   if (kind === 'earn'){
-    state.earn.push(state.avgOrder > 0 ? state.avgOrder : 50);
-    renderEarn();
+    state.earn.push(randStepUnused(10, 300, 5, state.earn));
+    renderEarn(); flashLast('tb-earn');
   } else if (kind === 'prod'){
-    state.products.push({id:nextId(), name:'Uusi tuote', price:25});
-    renderProd(); renderTimeline();
+    var usedNames = state.products.map(function(p){ return p.name; });
+    var free = PRODUCTS.filter(function(x){ return usedNames.indexOf(x.n) < 0; });
+    var t = pick(free.length ? free : PRODUCTS);
+    state.products.push({ id:nextId(), name:t.n, price:randStep(t.min, t.max, 5) });
+    renderProd(); renderTimeline(); flashLast('tb-prod');
   } else if (kind === 'buy'){
-    state.timeline.push({type:'buy', label:'Uusi osto', amount: state.avgOrder > 0 ? state.avgOrder : 50});
-    renderTimeline();
+    var usedLabels = state.timeline.map(function(r){ return r.label; });
+    state.timeline.push({
+      type: 'buy',
+      label: pickUnused(PURCHASE_LABELS, usedLabels),
+      amount: randStep(10, 250, 5)
+    });
+    renderTimeline(); flashLast('tb-time');
   } else if (kind === 'redeem'){
-    state.timeline.push({type:'redeem', label:'Lunastus pisteillä',
-      productId: state.products.length ? state.products[0].id : null});
-    renderTimeline();
+    /* Suositaan palkintoa, johon pisteet riittävät – muuten uusi rivi veisi
+       saldon heti miinukselle ja näyttäisi virheeltä. Käsin saa silti ylittää. */
+    var rows = timelineRows();
+    var bal = rows.length ? rows[rows.length-1].balance : 0;
+    var afford = state.products.filter(function(x){ return pointPrice(x.price) <= bal; });
+    var cheapest = state.products.slice().sort(function(a, b){ return a.price - b.price; })[0];
+    var target = afford.length ? pick(afford) : cheapest;
+    state.timeline.push({
+      type: 'redeem',
+      label: 'Lunastaa palkinnon pisteillä',
+      productId: target ? target.id : null
+    });
+    renderTimeline(); flashLast('tb-time');
   } else if (kind === 'tier'){
     var prev = state.tiers.length ? tierMult(state.tiers[state.tiers.length-1]) : state.multiplier;
     state.tiers.push({name:'Taso ' + (state.tiers.length + 1), linked:false, multiplier: prev + 1});
-    renderTier();
+    renderTier(); flashLast('tb-tier');
   }
   onChange();
 }
