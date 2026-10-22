@@ -530,7 +530,7 @@ footer strong{color:var(--ink)}
           <div><dt>Malli</dt><dd>Yhden tason esimerkki: säännöt, ansaitseminen, pistehinnat ja esimerkkiasiakas.</dd></div>
           <div><dt>Tasot</dt><dd>Seuraavat tasot: vain kerroin muuttuu, pistehinnat pysyvät samoina.</dd></div>
         </dl>
-        <p class="note" style="padding-bottom:18px">Tämä sovellus toistaa alkuperäisen Google&nbsp;Sheets -laskentamallin (välilehdet Ohje, Malli, Tasot) samoilla kaavoilla. Arvot tallentuvat vain tämän selaimen muistiin.</p>
+        <p class="note" style="padding-bottom:18px">Syöttämäsi arvot tallentuvat vain tämän selaimen muistiin. Mitään ei lähetetä palvelimelle eikä jaeta eteenpäin.</p>
       </section>
     </div>
   </div>
@@ -1145,7 +1145,7 @@ $('btn-theme').addEventListener('click', function(){
 });
 
 $('btn-reset').addEventListener('click', function(){
-  if (!window.confirm('Palautetaanko kaikki arvot alkuperäisen laskentamallin oletuksiin?')) return;
+  if (!window.confirm('Palautetaanko kaikki arvot esimerkkimallin oletuksiin?')) return;
   try { localStorage.removeItem(STORE); } catch(e){}
   uid = 0; state = defaults();
   boot();
