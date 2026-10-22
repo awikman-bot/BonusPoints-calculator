@@ -65,4 +65,5 @@ Sovellus toistaa Google Sheets -laskentamallin *Bonuspisteiden laskentamalli*
 ## Lähde
 
 Vilkas Suite tuki – [Kanta-asiakasohjelma](https://www.vilkas.fi/tuki/suite/kanta-asiakasohjelma)
-(luettu 20.10.2026). Esimerkkiluvut ovat oletuksia, ei päätettyjä arvoja.
+(luettu 20.10.2026). Sovelluksen esimerkkiluvut ovat havainnollistavia, eivät
+suosituksia – sopivat arvot päättää kauppa itse.
